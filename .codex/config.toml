@@ -1,0 +1,7 @@
+# Project-scoped Codex config; loaded only when this project is trusted in ~/.codex/config.toml.
+# Codex reads AGENTS.md and .agents/skills/ natively.
+
+[mcp_servers.context7]
+url = "https://mcp.context7.com/mcp"
+# Optional key for higher rate limits; skipped when CONTEXT7_API_KEY is unset or empty.
+env_http_headers = { CONTEXT7_API_KEY = "CONTEXT7_API_KEY" }
