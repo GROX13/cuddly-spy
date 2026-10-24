@@ -9,5 +9,6 @@
         "CONTEXT7_API_KEY": "${CONTEXT7_API_KEY:-}"
       }
     }
-  }
+  },
+  "policyPaths": ["~/.gemini/policies", ".gemini/policies"]
 }

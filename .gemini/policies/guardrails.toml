@@ -1,0 +1,76 @@
+# Gemini CLI guardrails; mirror the rules in .claude/settings.json and .codex/rules/.
+# Loaded via "policyPaths" in .gemini/settings.json (User tier), because Gemini CLI
+# ignores workspace .gemini/policies/ on its own (issue #18186). Start gemini from the repo root.
+# Priorities: deny 900 > ask 500 > allow 100. The highest-priority matching rule wins.
+
+# --- Deny: README.md is read-only (root README; kotlin/ and docs/ READMEs stay editable) ---
+[[rule]]
+toolName = ["write_file", "replace"]
+argsPattern = '"file_path":"(?![^"]*/(?:kotlin|docs)/)(?:[^"]*/|)README\.md"'
+decision = "deny"
+priority = 900
+denyMessage = "README.md holds the assignment and is read-only for agents (AGENTS.md Hard rules). Put new docs in kotlin/README.md or docs/."
+
+# --- Deny: bypassing the pre-commit hook ---
+[[rule]]
+toolName = "run_shell_command"
+commandRegex = 'git\b[^|;&]*\scommit\b[^|;&]*\s(--no-verify\b|-[a-zA-Z]*n)'
+decision = "deny"
+priority = 900
+denyMessage = "Pre-commit guardrails must run. Commit without --no-verify/-n and fix what the hook reports."
+
+[[rule]]
+toolName = "run_shell_command"
+commandRegex = 'git\b[^|;&]*\s-c\s*core\.hooks[pP]ath'
+decision = "deny"
+priority = 900
+denyMessage = "Overriding core.hooksPath skips the pre-commit guardrails."
+
+[[rule]]
+toolName = "run_shell_command"
+commandRegex = 'git\b[^|;&]*\sconfig\b[^|;&]*core\.hooks[pP]ath'
+decision = "deny"
+priority = 900
+denyMessage = "core.hooksPath is managed by the repo owner (git config core.hooksPath .githooks). Ask the user to run it."
+
+# --- Deny: destructive git ---
+[[rule]]
+toolName = "run_shell_command"
+commandRegex = 'git\b[^|;&]*\spush\b[^|;&]*\s(--force|--force-with-lease|-[a-zA-Z]*f|\+)'
+decision = "deny"
+priority = 900
+denyMessage = "History rewrites on the shared fork are off-limits. Push normally."
+
+[[rule]]
+toolName = "run_shell_command"
+commandRegex = 'git\b[^|;&]*\sreset\b[^|;&]*\s--hard'
+decision = "deny"
+priority = 900
+denyMessage = "git reset --hard discards work. Use git restore on specific paths instead."
+
+[[rule]]
+toolName = "run_shell_command"
+commandRegex = 'git\b[^|;&]*\sclean\b'
+decision = "deny"
+priority = 900
+denyMessage = "git clean deletes untracked files. Remove specific files explicitly instead."
+
+# --- Ask: publishing ---
+[[rule]]
+toolName = "run_shell_command"
+commandRegex = 'git\b[^|;&]*\spush\b'
+decision = "ask_user"
+priority = 500
+
+# --- Allow: build and read-only git, Context7 docs ---
+[[rule]]
+toolName = "run_shell_command"
+commandPrefix = ["mvn", "git status", "git diff", "git log", "git show"]
+decision = "allow"
+priority = 100
+
+[[rule]]
+toolName = "*"
+mcpName = "context7"
+decision = "allow"
+priority = 100
