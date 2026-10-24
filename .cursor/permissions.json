@@ -1,0 +1,12 @@
+{
+  "terminalAllowlist": [
+    "mvn",
+    "git status",
+    "git diff",
+    "git log",
+    "git show"
+  ],
+  "mcpAllowlist": [
+    "context7:*"
+  ]
+}

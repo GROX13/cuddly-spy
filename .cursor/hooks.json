@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "hooks": {
+    "beforeShellExecution": [
+      {
+        "command": ".cursor/hooks/guard-shell.sh",
+        "matcher": "git",
+        "timeout": 10,
+        "failClosed": true
+      }
+    ],
+    "preToolUse": [
+      {
+        "command": ".cursor/hooks/guard-readme.sh",
+        "matcher": "Write|Delete",
+        "timeout": 10,
+        "failClosed": true
+      }
+    ]
+  }
+}

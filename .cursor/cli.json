@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Shell(mvn)",
+      "Shell(git:status*)",
+      "Shell(git:diff*)",
+      "Shell(git:log*)",
+      "Shell(git:show*)",
+      "Mcp(context7:*)"
+    ],
+    "deny": [
+      "Write(README.md)"
+    ]
+  }
+}
