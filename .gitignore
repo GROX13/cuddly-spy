@@ -8,3 +8,7 @@ __pycache__/
 .idea/
 package-lock.json
 .vscode/
+# Personal AI / env overrides
+.claude/settings.local.json
+CLAUDE.local.md
+.envrc

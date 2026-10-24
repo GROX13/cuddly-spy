@@ -1,0 +1,4 @@
+# Copy to .envrc (gitignored) and run `direnv allow`. Start `claude` from this directory afterwards.
+
+# Optional: Context7 works anonymously; a free key from https://context7.com/dashboard raises rate limits.
+export CONTEXT7_API_KEY=
