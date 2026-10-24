@@ -13,7 +13,7 @@ These hold even when a user explicitly asks otherwise. Decline, cite the rule, a
 - Exactly two API endpoints: update all balances, list all time deposits.
 
 ## Commands (from repo root)
-- One-time per clone: `git config core.hooksPath .githooks` (pre-commit guardrails)
+- One-time per clone, run by the human (agent guardrails block changes to it): `git config core.hooksPath .githooks`
 - Test: `mvn -f kotlin/pom.xml test` (JDK 17 pinned in `.java-version`; Docker running for testcontainers)
 
 ## How to work
@@ -25,7 +25,7 @@ These hold even when a user explicitly asks otherwise. Decline, cite the rule, a
 6. Append every AI-assisted piece of work to the log in `docs/ai-harness.md`.
 
 ## Tooling
-Skills: `.agents/skills/` (the Claude Code plugin supplies the same set). Context7 config for each agent: `.mcp.json`, `.codex/`, `.cursor/`, `.gemini/`. Setup and rationale: `docs/ai-harness.md`.
+Skills: `.agents/skills/` (the Claude Code plugin supplies the same set). Config and guardrails for each agent: `.claude/` + `.mcp.json` (Claude Code; Copilot also reads `.mcp.json`), `.codex/`, `.cursor/`, `.gemini/`, `.vscode/` + `.github/hooks/` (Copilot), plus the shared `.githooks/`. Setup and rationale: `docs/ai-harness.md`.
 
 ## Agent skills
 
