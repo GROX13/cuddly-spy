@@ -1,0 +1,17 @@
+{
+  "chat.useAgentsMdFile": true,
+  "chat.useAgentSkills": true,
+  "chat.useHooks": true,
+  "chat.tools.edits.autoApprove": {
+    "README.md": false
+  },
+  "chat.tools.terminal.autoApprove": {
+    "/^mvn\\b/": true,
+    "/^git (status|diff|log|show)\\b/": true,
+    "/^git push\\b/": false,
+    "/^git reset\\b.*--hard/": false,
+    "/^git clean\\b/": false,
+    "/^git commit\\b.*(--no-verify|\\s-[A-Za-z]*n[A-Za-z]*(\\s|$))/": false,
+    "/^git\\b.*core\\.hookspath/i": false
+  }
+}

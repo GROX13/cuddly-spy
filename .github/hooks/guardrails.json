@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "hooks": {
+    "PreToolUse": [
+      {
+        "type": "command",
+        "command": "sh .github/hooks/guardrails.sh",
+        "timeout": 10
+      }
+    ]
+  }
+}
