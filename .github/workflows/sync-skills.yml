@@ -1,0 +1,44 @@
+name: Sync agent skills
+
+on:
+  schedule:
+    - cron: "0 6 * * 1" # Mondays 06:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Sync skills to upstream HEAD
+        run: scripts/sync-skills.sh latest
+
+      - name: Open PR if skills changed
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Ignore lock-only bumps; open a PR only when skill content changed.
+          if [ -z "$(git status --porcelain -- .agents/skills ':!.agents/skills/skills.lock')" ]; then
+            echo "No skill changes."
+            exit 0
+          fi
+          . .agents/skills/skills.lock
+          branch="chore/sync-skills-${sha:0:7}"
+          if git ls-remote --exit-code --heads origin "$branch" >/dev/null; then
+            echo "PR branch $branch already exists."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "$branch"
+          git add .agents/skills
+          git commit -m "chore: sync agent skills to mattpocock/skills@${sha:0:7}"
+          git push origin "$branch"
+          gh pr create --base main --head "$branch" \
+            --title "chore: sync agent skills to mattpocock/skills@${sha:0:7}" \
+            --body "Automated weekly sync of \`.agents/skills/\` from https://github.com/mattpocock/skills/commit/${sha}. Review the diff before merging. The Claude Code plugin updates separately via \`/plugin update\`."

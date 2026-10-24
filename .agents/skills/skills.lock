@@ -1,0 +1,4 @@
+# Source of the vendored skills; managed by scripts/sync-skills.sh.
+repo=https://github.com/mattpocock/skills.git
+sha=49dd158d1076134a641b33efb035946536778336
+paths="skills/productivity/grilling skills/engineering/tdd skills/engineering/codebase-design skills/engineering/domain-modeling skills/engineering/code-review skills/engineering/pr"
