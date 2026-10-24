@@ -1,33 +1,184 @@
 # Hard command rules for Codex; mirror the deny list in .claude/settings.json.
+#
+# Language limits (codex execpolicy, prefix rules only):
+# - Tokens match from the start, in order. A list means "any of these" for that one position.
+#   No wildcards, no "anywhere in argv", no regex. A flag after a free-form value
+#   (git commit -m <msg> --no-verify) can't be matched; the pre-commit hook and CI cover those.
+# - When several rules match, the strictest wins: forbidden > prompt > allow.
+# - In a session, Codex splits plain `bash -lc "a && b | c"` scripts and checks each command.
+#   Scripts with redirects, $(...), VAR=x prefixes or globs are not split and match no rule.
+#   `codex execpolicy check` does not unwrap shells; pass the inner command to test it.
+# - forbidden applies in every sandbox mode, full access included.
+# - `allow` runs the command outside the sandbox without asking, so keep allow rules narrow.
+#
+# Check a command: codex execpolicy check --rules .codex/rules/guardrails.rules git commit -n -m x
+
+# --- G2: hooks must run -------------------------------------------------------------------
+
+# --no-verify and the abbreviations and short-flag bundles git accepts for it.
+NO_VERIFY = ["--no-verify", "--no-verif", "--no-veri", "-n", "-an", "-na", "-nm", "-anm", "-nam", "-nsm", "-snm"]
+
+# Flags seen before --no-verify that take no free-form value.
+COMMIT_FLAGS = ["-a", "--all", "--amend", "--no-edit", "-q", "--quiet", "-s", "--signoff", "-v", "--verbose", "-S", "--allow-empty"]
 
 prefix_rule(
-    pattern = ["git", "commit", ["--no-verify", "-n"]],
+    pattern = ["git", "commit", NO_VERIFY],
     decision = "forbidden",
     justification = "Pre-commit guardrails must run. Commit without --no-verify and fix what the hook reports.",
-    match = ["git commit --no-verify -m x", "git commit -n -m x"],
-    not_match = ["git commit -m x"],
+    match = ["git commit --no-verify -m x", "git commit -n -m x", "git commit -anm x", "git commit --no-veri -m x"],
+    not_match = ["git commit -m x", "git commit -am x", "git commit --amend --no-edit"],
 )
 
 prefix_rule(
-    pattern = ["git", "push", ["--force", "-f", "--force-with-lease"]],
+    pattern = ["git", "commit", COMMIT_FLAGS, NO_VERIFY],
+    decision = "forbidden",
+    justification = "Pre-commit guardrails must run. Commit without --no-verify and fix what the hook reports.",
+    match = ["git commit -a --no-verify -m x", "git commit --amend -n"],
+    not_match = ["git commit -a -m x"],
+)
+
+prefix_rule(
+    pattern = ["git", "commit", COMMIT_FLAGS, COMMIT_FLAGS, NO_VERIFY],
+    decision = "forbidden",
+    justification = "Pre-commit guardrails must run. Commit without --no-verify and fix what the hook reports.",
+    match = ["git commit --amend --no-edit --no-verify"],
+    not_match = ["git commit --amend --no-edit"],
+)
+
+# Git config keys are case-insensitive; these are the spellings agents actually type.
+HOOKS_PATH = ["core.hooksPath", "core.hookspath", "core.HooksPath", "core.HOOKSPATH"]
+
+# Scope flags and actions that can precede the key: --local --unset, unset --local, set ...
+CONFIG_OPTS = ["--local", "--global", "--system", "--worktree", "--unset", "--unset-all", "--replace-all", "--add", "set", "unset"]
+
+prefix_rule(
+    pattern = ["git", "config", HOOKS_PATH],
+    decision = "forbidden",
+    justification = "core.hooksPath enables the pre-commit guardrails and is set once by the repo owner. Read it with: git config --get core.hooksPath",
+    match = ["git config core.hooksPath /dev/null", "git config core.hookspath ''"],
+    not_match = ["git config --get core.hooksPath", "git config user.name x"],
+)
+
+prefix_rule(
+    pattern = ["git", "config", CONFIG_OPTS, HOOKS_PATH],
+    decision = "forbidden",
+    justification = "core.hooksPath enables the pre-commit guardrails and is set once by the repo owner. Read it with: git config --get core.hooksPath",
+    match = ["git config --unset core.hooksPath", "git config --local core.hooksPath x", "git config unset core.hooksPath"],
+    not_match = ["git config --local user.name x"],
+)
+
+prefix_rule(
+    pattern = ["git", "config", CONFIG_OPTS, CONFIG_OPTS, HOOKS_PATH],
+    decision = "forbidden",
+    justification = "core.hooksPath enables the pre-commit guardrails and is set once by the repo owner. Read it with: git config --get core.hooksPath",
+    match = ["git config --local --unset core.hooksPath", "git config unset --local core.hooksPath"],
+)
+
+prefix_rule(
+    pattern = ["git", "config", ["-f", "--file"], ".git/config", HOOKS_PATH],
+    decision = "forbidden",
+    justification = "core.hooksPath enables the pre-commit guardrails and is set once by the repo owner. Read it with: git config --get core.hooksPath",
+    match = ["git config -f .git/config core.hooksPath x"],
+)
+
+# Global options before the subcommand can override hooksPath (-c, --config-env) or point git
+# somewhere the subcommand rules below don't see (-C, --git-dir, --work-tree). Their values are
+# free-form, so prefix rules can't inspect them: ask instead.
+prefix_rule(
+    pattern = ["git", ["-c", "--config-env", "-C", "--git-dir", "--git-dir=.git", "--work-tree", "--work-tree=.", "--exec-path"]],
+    decision = "prompt",
+    justification = "Global git options can bypass the hook and command rules. Run git from the repo root without them, or confirm this exact command.",
+    match = ["git -c core.hooksPath=/dev/null commit -m x", "git -C . push --force", "git --git-dir=.git status", "git --git-dir .git commit -n"],
+    not_match = ["git status", "git commit -m x"],
+)
+
+# Exact forbidden forms of the most common -c bypasses, for a clear refusal message.
+prefix_rule(
+    pattern = ["git", "-c", ["core.hooksPath=/dev/null", "core.hookspath=/dev/null", "core.hooksPath=", "core.hookspath=", "core.hooksPath=/tmp", "core.hooksPath=.git/hooks"]],
+    decision = "forbidden",
+    justification = "Pre-commit guardrails must run. Commit without overriding core.hooksPath.",
+    match = ["git -c core.hooksPath=/dev/null commit -m x"],
+    not_match = ["git -c color.ui=false status"],
+)
+
+# --- G3: no destructive git ----------------------------------------------------------------
+
+FORCE = ["--force", "-f", "--force-with-lease", "--force-if-includes", "--mirror", "-uf", "-fu"]
+REMOTE = ["origin", "upstream", "-u", "--set-upstream"]
+REF = ["main", "master", "HEAD", "develop", "origin"]
+FORCED_REF = ["+main", "+master", "+HEAD", "+develop", "+HEAD:main", "+HEAD:master"]
+
+prefix_rule(
+    pattern = ["git", "push", FORCE],
     decision = "forbidden",
     justification = "History rewrites on the shared fork are off-limits. Push normally.",
+    match = ["git push --force", "git push -f origin", "git push --force-with-lease origin main"],
+    not_match = ["git push", "git push origin main"],
+)
+
+prefix_rule(
+    pattern = ["git", "push", REMOTE, FORCE + FORCED_REF],
+    decision = "forbidden",
+    justification = "History rewrites on the shared fork are off-limits. Push normally.",
+    match = ["git push origin --force", "git push origin +main", "git push -u -f origin main"],
+    not_match = ["git push origin main", "git push -u origin main"],
+)
+
+prefix_rule(
+    pattern = ["git", "push", REMOTE, REF, FORCE + FORCED_REF],
+    decision = "forbidden",
+    justification = "History rewrites on the shared fork are off-limits. Push normally.",
+    match = ["git push origin main --force", "git push origin main -f", "git push -u origin +main"],
+    not_match = ["git push -u origin main"],
 )
 
 prefix_rule(
     pattern = ["git", "reset", "--hard"],
     decision = "forbidden",
-    justification = "Discards work. Use git restore on specific paths instead.",
+    justification = "Discards work. Use git restore on specific paths, or git stash, instead.",
+    match = ["git reset --hard", "git reset --hard HEAD~1"],
+    not_match = ["git reset HEAD README.md", "git reset --soft HEAD~1"],
+)
+
+prefix_rule(
+    pattern = ["git", "reset", ["-q", "--quiet", "HEAD", "HEAD~1", "HEAD^", "origin/main", "origin/master", "main", "master"], "--hard"],
+    decision = "forbidden",
+    justification = "Discards work. Use git restore on specific paths, or git stash, instead.",
+    match = ["git reset HEAD~1 --hard", "git reset origin/main --hard"],
 )
 
 prefix_rule(
     pattern = ["git", "clean"],
     decision = "forbidden",
     justification = "Deletes untracked files. Remove specific files explicitly instead.",
+    match = ["git clean -fd", "git clean -n"],
 )
+
+# --- G4: pushing asks first ----------------------------------------------------------------
 
 prefix_rule(
     pattern = ["git", "push"],
     decision = "prompt",
     justification = "Pushing publishes to GitHub; confirm with the user first.",
+    match = ["git push", "git push origin main", "git push origin feature-x --force"],
+)
+
+# --- G5: fewer prompts for the test command ------------------------------------------------
+
+# Runs unsandboxed: testcontainers needs the Docker socket and Maven needs the network.
+# Read-only git is not allowed here on purpose: Codex already runs it inside the sandbox
+# without asking, and an allow rule would run it unsandboxed (git diff --output=FILE writes).
+prefix_rule(
+    pattern = ["mvn", ["-q", "-B", "--batch-mode"], ["-f", "--file"], "kotlin/pom.xml"],
+    decision = "allow",
+    justification = "Project test command from AGENTS.md.",
+    match = ["mvn -q -f kotlin/pom.xml test"],
+)
+
+prefix_rule(
+    pattern = ["mvn", ["-f", "--file"], "kotlin/pom.xml"],
+    decision = "allow",
+    justification = "Project test command from AGENTS.md.",
+    match = ["mvn -f kotlin/pom.xml test", "mvn -f kotlin/pom.xml -Dtest=FooTest test"],
+    not_match = ["mvn test", "mvn -f other/pom.xml test"],
 )

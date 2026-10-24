@@ -1,5 +1,18 @@
 # Project-scoped Codex config; loaded only when this project is trusted in ~/.codex/config.toml.
-# Codex reads AGENTS.md and .agents/skills/ natively.
+# Codex reads AGENTS.md and .agents/skills/ natively. Command rules: .codex/rules/guardrails.rules.
+
+# Default sandbox: the built-in workspace-write profile, plus the assignment README.md read-only.
+# Covers shell writes and apply_patch while the sandbox is on. Full access (/permissions,
+# --sandbox danger-full-access, --yolo) switches it off; the pre-commit hook still applies.
+# Workspace roots follow cwd, so start Codex from the repo root.
+default_permissions = "kata"
+
+[permissions.kata]
+description = "Workspace write, with the assignment README.md read-only"
+extends = ":workspace"
+
+[permissions.kata.filesystem.":workspace_roots"]
+"README.md" = "read"
 
 [mcp_servers.context7]
 url = "https://mcp.context7.com/mcp"
