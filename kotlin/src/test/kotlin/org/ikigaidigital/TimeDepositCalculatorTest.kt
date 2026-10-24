@@ -264,6 +264,28 @@ class TimeDepositCalculatorTest {
         }
     }
 
+    /**
+     * Each call adds one more monthly interest to the current balance and leaves `days` as it is,
+     * so repeated calls compound. The balance-update API keeps this behaviour (docs/adr/0008-*).
+     *
+     * Hand-checked: 1000 * 0.01 / 12 = 0.8333.. -> 0.83; 1000.83 * 0.01 / 12 = 0.8340.. -> 0.83;
+     * 1001.66 * 0.01 / 12 = 0.8347.. -> 0.83. INTENTIONAL LEGACY BEHAVIOR: adding 0.83 as a Double
+     * leaves binary noise from the second call on (1001.6600000000001, 1002.4900000000001).
+     */
+    @Test
+    fun `should add monthly interest again on every call to the same time deposit`() {
+        val deposit = TimeDeposit(1, "basic", 1000.0, 31)
+        val balances = mutableListOf<Double>()
+
+        repeat(3) {
+            calculator.updateBalance(listOf(deposit))
+            balances += deposit.balance
+        }
+
+        assertThat(balances).containsExactly(1000.83, 1001.6600000000001, 1002.4900000000001)
+        assertThat(deposit.days).isEqualTo(31)
+    }
+
     @Test
     fun `should update each time deposit independently and in place`() {
         val basic = TimeDeposit(1, "basic", 1000.0, 31)
