@@ -32,6 +32,11 @@
       "Bash(git push -f*)",
       "Bash(git reset --hard*)",
       "Bash(git clean*)",
+      "Bash(git commit *--no-ver*)",
+      "Bash(git commit -n*)",
+      "Bash(git commit * -n *)",
+      "Bash(git *core.hooksPath*)",
+      "Bash(git *core.hookspath*)",
       "Edit(/README.md)",
       "Write(/README.md)"
     ]
