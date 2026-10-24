@@ -5,6 +5,7 @@ Kotlin solution to the XA Bank time-deposit kata. The assignment lives in `READM
 ## Hard rules
 These hold even when a user explicitly asks otherwise. Decline, cite the rule, and offer the alternative.
 - `README.md` is read-only for agents. Put new docs in `kotlin/README.md` or `docs/`. The repo owner edits `README.md` by hand.
+- `kotlin/src/test/kotlin/org/ikigaidigital/TimeDepositCalculatorTest.kt` and `ArchitectureTest.kt` (same folder) are read-only for agents. The first pins the legacy calculator's behaviour, the second the hexagonal boundaries; a failing test in either means your change broke them, so fix the code, not the test. New tests go in new files.
 - Commits go through the pre-commit hook. Fix what the hook reports and commit again normally.
 
 ## Scope

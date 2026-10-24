@@ -27,21 +27,29 @@ decide() { # $1 = deny|ask, $2 = reason
   exit 0
 }
 
-# --- G1: root README.md is read-only (edit-type tools only; reads stay allowed) ---
+# --- G1: root README.md, the characterization tests and ArchitectureTest are read-only (edit-type tools only; reads stay allowed) ---
 if printf '%s' "$tool" | grep -Eqi 'edit|write|create|replace|patch|insert|delete|rename|move'; then
   root=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
-  printf '%s' "$args" | jq -r '
-      [.. | strings] | .[]
-      | (capture("\\*\\*\\* (Update|Add|Delete) File: (?<p>[^\n]+)"; "g") | .p), .' 2>/dev/null |
+  # A function, not an inline loop: sh can't parse `case ... )` patterns inside $( ... ).
+  protected_path() {
     while IFS= read -r p; do
       p=${p#./}
       case "$p" in "$root"/*) p=${p#"$root"/} ;; esac
-      if [ "$(printf '%s' "$p" | tr '[:upper:]' '[:lower:]')" = "readme.md" ]; then
-        echo hit
-        break
-      fi
-    done | grep -q hit &&
-    decide deny "README.md holds the assignment and is read-only for agents (AGENTS.md Hard rules). Put docs in kotlin/README.md or docs/."
+      case "$(printf '%s' "$p" | tr '[:upper:]' '[:lower:]')" in
+        readme.md) echo readme; return ;;
+        kotlin/src/test/kotlin/org/ikigaidigital/timedepositcalculatortest.kt) echo chartest; return ;;
+        kotlin/src/test/kotlin/org/ikigaidigital/architecturetest.kt) echo archtest; return ;;
+      esac
+    done
+  }
+  hit=$(printf '%s' "$args" | jq -r '
+      [.. | strings] | .[]
+      | (capture("\\*\\*\\* (Update|Add|Delete) File: (?<p>[^\n]+)"; "g") | .p), .' 2>/dev/null | protected_path)
+  case "$hit" in
+    readme) decide deny "README.md holds the assignment and is read-only for agents (AGENTS.md Hard rules). Put docs in kotlin/README.md or docs/." ;;
+    chartest) decide deny "TimeDepositCalculatorTest.kt is read-only for agents (AGENTS.md Hard rules). A failing test there means behaviour changed: fix the code, and put new tests in new files." ;;
+    archtest) decide deny "ArchitectureTest.kt is read-only for agents (AGENTS.md Hard rules). A failing rule there means the code crossed a hexagonal boundary: fix the code, and put new tests in new files." ;;
+  esac
 fi
 
 # --- Terminal commands: any tool whose input carries a command string ---

@@ -38,7 +38,11 @@
       "Bash(git *core.hooksPath*)",
       "Bash(git *core.hookspath*)",
       "Edit(/README.md)",
-      "Write(/README.md)"
+      "Write(/README.md)",
+      "Edit(/kotlin/src/test/kotlin/org/ikigaidigital/TimeDepositCalculatorTest.kt)",
+      "Write(/kotlin/src/test/kotlin/org/ikigaidigital/TimeDepositCalculatorTest.kt)",
+      "Edit(/kotlin/src/test/kotlin/org/ikigaidigital/ArchitectureTest.kt)",
+      "Write(/kotlin/src/test/kotlin/org/ikigaidigital/ArchitectureTest.kt)"
     ]
   }
 }

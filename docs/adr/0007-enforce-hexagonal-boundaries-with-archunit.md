@@ -10,3 +10,4 @@ We chose ArchUnit in one Maven module over a multi-module build: the same `verif
 ## Consequences
 - Boundaries are checked at test time, not compile time, so a violation compiles but can't be committed (the pre-commit hook runs `verify`).
 - The rules allow empty packages until phases 3–5 add code to them.
+- `ArchitectureTest.kt` is read-only for AI agents (an `AGENTS.md` Hard rule plus an edit block in every agent's config), so an agent can't make a violation pass by loosening a rule. The repo owner changes the rules by hand when the architecture really changes.

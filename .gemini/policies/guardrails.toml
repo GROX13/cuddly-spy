@@ -11,6 +11,14 @@ decision = "deny"
 priority = 900
 denyMessage = "README.md holds the assignment and is read-only for agents (AGENTS.md Hard rules). Put new docs in kotlin/README.md or docs/."
 
+# --- Deny: the characterization tests and ArchitectureTest are read-only ---
+[[rule]]
+toolName = ["write_file", "replace"]
+argsPattern = '"file_path":"(?:[^"]*/|)kotlin/src/test/kotlin/org/ikigaidigital/(?:TimeDepositCalculatorTest|ArchitectureTest)\.kt"'
+decision = "deny"
+priority = 900
+denyMessage = "TimeDepositCalculatorTest.kt and ArchitectureTest.kt are read-only for agents (AGENTS.md Hard rules). A failing test there means behaviour or a boundary broke: fix the code, and put new tests in new files."
+
 # --- Deny: bypassing the pre-commit hook ---
 [[rule]]
 toolName = "run_shell_command"
