@@ -8,6 +8,7 @@ Kotlin solution to the XA Bank time-deposit kata. The assignment lives in `READM
 - Exactly two API endpoints: update all balances, list all time deposits.
 
 ## Commands (from repo root)
+- One-time per clone: `git config core.hooksPath .githooks` (pre-commit guardrails)
 - Test: `mvn -f kotlin/pom.xml test` (JDK 17 pinned in `.java-version`; Docker running for testcontainers)
 
 ## How to work
@@ -19,7 +20,7 @@ Kotlin solution to the XA Bank time-deposit kata. The assignment lives in `READM
 6. Append every AI-assisted piece of work to the log in `docs/ai-harness.md`.
 
 ## Tooling
-Skills, MCPs and permissions: `.claude/settings.json`, `.mcp.json`. Setup and rationale: `docs/ai-harness.md`.
+Skills: `.agents/skills/` (the Claude Code plugin supplies the same set). Context7 config for each agent: `.mcp.json`, `.codex/`, `.cursor/`, `.gemini/`. Setup and rationale: `docs/ai-harness.md`.
 
 ## Agent skills
 
