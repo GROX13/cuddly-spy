@@ -1,0 +1,67 @@
+# Sample data for the local profile only (spring.liquibase.contexts: local).
+# Two time deposits per plan type, one that earns interest and one that doesn't, so a single
+# balance update shows every rule: basic earns after day 30, student only from day 31 to 365,
+# premium only after day 45.
+# Withdrawals are historical records shown by GET /time-deposits. They are NOT deducted from
+# the balance (see docs/adr/0003-withdrawals-are-history.md), so the balances below are final.
+databaseChangeLog:
+  - changeSet:
+      id: 003-seed-local
+      author: giorgi.rokhadze
+      context: local
+      changes:
+        - insert:
+            tableName: time_deposits
+            columns:
+              - column: { name: plan_type, value: basic }
+              - column: { name: days, valueNumeric: 20 }
+              - column: { name: balance, valueNumeric: 1000.00 }
+        - insert:
+            tableName: time_deposits
+            columns:
+              - column: { name: plan_type, value: basic }
+              - column: { name: days, valueNumeric: 400 }
+              - column: { name: balance, valueNumeric: 1500.00 }
+        - insert:
+            tableName: time_deposits
+            columns:
+              - column: { name: plan_type, value: student }
+              - column: { name: days, valueNumeric: 200 }
+              - column: { name: balance, valueNumeric: 2000.00 }
+        - insert:
+            tableName: time_deposits
+            columns:
+              - column: { name: plan_type, value: student }
+              - column: { name: days, valueNumeric: 400 }
+              - column: { name: balance, valueNumeric: 2500.00 }
+        - insert:
+            tableName: time_deposits
+            columns:
+              - column: { name: plan_type, value: premium }
+              - column: { name: days, valueNumeric: 40 }
+              - column: { name: balance, valueNumeric: 5000.00 }
+        - insert:
+            tableName: time_deposits
+            columns:
+              - column: { name: plan_type, value: premium }
+              - column: { name: days, valueNumeric: 90 }
+              - column: { name: balance, valueNumeric: 6000.00 }
+        # Withdrawals look up their time deposit instead of assuming generated ids.
+        - insert:
+            tableName: withdrawals
+            columns:
+              - column: { name: time_deposit_id, valueComputed: "(SELECT id FROM time_deposits WHERE plan_type = 'basic' AND days = 400)" }
+              - column: { name: amount, valueNumeric: 100.00 }
+              - column: { name: date, valueDate: "2026-03-15" }
+        - insert:
+            tableName: withdrawals
+            columns:
+              - column: { name: time_deposit_id, valueComputed: "(SELECT id FROM time_deposits WHERE plan_type = 'basic' AND days = 400)" }
+              - column: { name: amount, valueNumeric: 50.00 }
+              - column: { name: date, valueDate: "2026-06-01" }
+        - insert:
+            tableName: withdrawals
+            columns:
+              - column: { name: time_deposit_id, valueComputed: "(SELECT id FROM time_deposits WHERE plan_type = 'premium' AND days = 90)" }
+              - column: { name: amount, valueNumeric: 250.00 }
+              - column: { name: date, valueDate: "2026-08-20" }

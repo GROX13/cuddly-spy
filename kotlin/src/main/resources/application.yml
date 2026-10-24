@@ -1,0 +1,11 @@
+spring:
+  application:
+    name: time-deposit-kata
+  liquibase:
+    change-log: classpath:db/changelog/db.changelog-master.yaml
+    # Only changesets without a context, or with context "default", run. The local seed is skipped.
+    contexts: default
+  docker:
+    compose:
+      # Off unless the local profile turns it on, so no profile but local ever starts compose.yaml.
+      enabled: false

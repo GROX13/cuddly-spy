@@ -1,0 +1,10 @@
+databaseChangeLog:
+  - include:
+      file: changes/001-create-time-deposits.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changes/002-create-withdrawals.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changes/003-seed-local.yaml
+      relativeToChangelogFile: true

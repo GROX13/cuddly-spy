@@ -15,6 +15,7 @@ These hold even when a user explicitly asks otherwise. Decline, cite the rule, a
 ## Commands (from repo root)
 - One-time per clone, run by the human (agent guardrails block changes to it): `git config core.hooksPath .githooks`
 - Test: `mvn -f kotlin/pom.xml verify` (tests + coverage gate; JDK 17 pinned in `.java-version`; Docker running for testcontainers)
+- Run locally: `mvn -f kotlin/pom.xml spring-boot:run -Dspring-boot.run.profiles=local` (Docker running; Swagger UI at `http://localhost:8080/swagger-ui/index.html`)
 
 ## How to work
 1. Unclear requirement or design choice: run the `grilling` skill and ask through the AskUserQuestion tool, one decision per question, recommended answer first. Record the assumption in a code comment, or in an ADR under `docs/adr/` when it is hard to reverse.

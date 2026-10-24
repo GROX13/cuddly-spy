@@ -1,0 +1,34 @@
+# Table and column names are unquoted snake_case. The README writes them in camelCase
+# (timeDeposits, planType); that is read as formatting, not as quoted identifiers.
+# Money is NUMERIC(19,2), see docs/adr/0002-money-as-numeric-19-2.md.
+databaseChangeLog:
+  - changeSet:
+      id: 001-create-time-deposits
+      author: giorgi.rokhadze
+      changes:
+        - createTable:
+            tableName: time_deposits
+            columns:
+              - column:
+                  name: id
+                  type: INTEGER
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_time_deposits
+                    nullable: false
+              - column:
+                  name: plan_type
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: days
+                  type: INTEGER
+                  constraints:
+                    nullable: false
+              - column:
+                  name: balance
+                  type: NUMERIC(19,2)
+                  constraints:
+                    nullable: false

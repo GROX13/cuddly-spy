@@ -21,7 +21,7 @@ The current amount held in a time deposit.
 _Avoid_: Amount, principal
 
 **Withdrawal**:
-An amount taken out of a time deposit on a given date.
+A historical record of an amount taken out of a time deposit on a given date; the balance already reflects it.
 _Avoid_: Debit, payout
 
 **Monthly interest**:

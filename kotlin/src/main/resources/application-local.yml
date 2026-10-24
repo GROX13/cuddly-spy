@@ -1,0 +1,8 @@
+spring:
+  liquibase:
+    # Also runs the local seed changeset (003-seed-local.yaml).
+    contexts: local
+  docker:
+    compose:
+      enabled: true
+      lifecycle-management: start-and-stop
