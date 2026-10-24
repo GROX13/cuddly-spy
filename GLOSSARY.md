@@ -1,0 +1,29 @@
+# XA Bank Time Deposits
+
+Fixed-term savings products whose balances grow by plan-specific monthly interest.
+
+## Language
+
+**Time deposit**:
+A customer's fixed-term savings holding with a plan type, a balance and an age in days.
+_Avoid_: Account, deposit account, savings
+
+**Plan type**:
+The product a time deposit is opened under (`basic`, `student` or `premium`); it decides the interest rule.
+_Avoid_: Plan, product, tier
+
+**Days**:
+How long the time deposit has existed; interest eligibility is decided from it.
+_Avoid_: Age, term, duration
+
+**Balance**:
+The current amount held in a time deposit.
+_Avoid_: Amount, principal
+
+**Withdrawal**:
+An amount taken out of a time deposit on a given date.
+_Avoid_: Debit, payout
+
+**Monthly interest**:
+One twelfth of the plan type's annual rate applied to the balance, added when balances are updated.
+_Avoid_: Yield, return
