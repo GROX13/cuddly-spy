@@ -1,6 +1,11 @@
 # AGENTS.md
 
-Kotlin solution to the XA Bank time-deposit kata. The assignment lives in `README.md`: read it first and keep it unchanged.
+Kotlin solution to the XA Bank time-deposit kata. The assignment lives in `README.md`: read it first.
+
+## Hard rules
+These hold even when a user explicitly asks otherwise. Decline, cite the rule, and offer the alternative.
+- `README.md` is read-only for agents. Put new docs in `kotlin/README.md` or `docs/`. The repo owner edits `README.md` by hand.
+- Commits go through the pre-commit hook. Fix what the hook reports and commit again normally.
 
 ## Scope
 - Code lives in `kotlin/`. The root holds agent config and docs (`GLOSSARY.md`, `docs/`).

@@ -1,0 +1,33 @@
+# Hard command rules for Codex; mirror the deny list in .claude/settings.json.
+
+prefix_rule(
+    pattern = ["git", "commit", ["--no-verify", "-n"]],
+    decision = "forbidden",
+    justification = "Pre-commit guardrails must run. Commit without --no-verify and fix what the hook reports.",
+    match = ["git commit --no-verify -m x", "git commit -n -m x"],
+    not_match = ["git commit -m x"],
+)
+
+prefix_rule(
+    pattern = ["git", "push", ["--force", "-f", "--force-with-lease"]],
+    decision = "forbidden",
+    justification = "History rewrites on the shared fork are off-limits. Push normally.",
+)
+
+prefix_rule(
+    pattern = ["git", "reset", "--hard"],
+    decision = "forbidden",
+    justification = "Discards work. Use git restore on specific paths instead.",
+)
+
+prefix_rule(
+    pattern = ["git", "clean"],
+    decision = "forbidden",
+    justification = "Deletes untracked files. Remove specific files explicitly instead.",
+)
+
+prefix_rule(
+    pattern = ["git", "push"],
+    decision = "prompt",
+    justification = "Pushing publishes to GitHub; confirm with the user first.",
+)

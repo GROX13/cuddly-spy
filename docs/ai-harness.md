@@ -22,7 +22,7 @@ All agents share `AGENTS.md`, the vendored skills, the hook and Context7. Only t
 | Agent | Rules | Context7 | Skills | Guardrails |
 |---|---|---|---|---|
 | Claude Code | `CLAUDE.md` → `AGENTS.md` | `.mcp.json` | plugin via `.claude/settings.json` | `.claude/settings.json` permissions + hook |
-| Codex CLI | `AGENTS.md` | `.codex/config.toml` | `.agents/skills/` | hook |
+| Codex CLI | `AGENTS.md` | `.codex/config.toml` | `.agents/skills/` | `.codex/rules/` + hook |
 | Cursor | `AGENTS.md` | `.cursor/mcp.json` | `.agents/skills/` | hook |
 | Gemini CLI | `AGENTS.md` (via `.gemini/settings.json`) | `.gemini/settings.json` | `.agents/skills/` | hook |
 
@@ -55,6 +55,12 @@ Personal overrides go in gitignored files: `.claude/settings.local.json`, `CLAUD
   - allowed without prompting: `mvn`, `docker ps`, read-only git, Context7
   - asks first: `git push`
   - denied: force push, `git reset --hard`, `git clean`, and editing `README.md`
+- **Codex** (`.codex/rules/guardrails.rules`, enforced even in full-access mode):
+  - forbidden: `git commit --no-verify`/`-n`, force push, `git reset --hard`, `git clean`
+  - asks first: `git push`
+  - check a command: `codex execpolicy check --rules .codex/rules/guardrails.rules git commit -n -m x`
+
+Instructions in `AGENTS.md` are a soft layer: an agent may follow an explicit user request over them. The hook and the per-agent rules are the hard layer. An agent can still edit `README.md` in the working tree, but the edit can't be committed.
 
 ## Workflow
 
