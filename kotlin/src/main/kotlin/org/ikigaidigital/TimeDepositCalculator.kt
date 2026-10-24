@@ -1,27 +1,18 @@
 package org.ikigaidigital
 
+import org.ikigaidigital.timedeposit.domain.PlanType
+import org.ikigaidigital.timedeposit.domain.planTypes
 import java.math.BigDecimal
 import java.math.RoundingMode
 
-class TimeDepositCalculator {
+class TimeDepositCalculator(plans: Set<PlanType> = planTypes) {
+    private val plansByCode = plans.associateBy { it.code } // map built once from the active plans
+
     fun updateBalance(xs: List<TimeDeposit>) {
-        for (i in xs.indices) {
-            var interest = 0.0
-            if (xs[i].days > 30) {
-                if (xs[i].planType == "student") {
-                    if (xs[i].days < 366) {
-                        interest += xs[i].balance * 0.03 / 12
-                    }
-                } else if (xs[i].planType == "premium") {
-                    if (xs[i].days > 45) {
-                        interest += xs[i].balance * 0.05 / 12
-                    }
-                } else if (xs[i].planType == "basic") {
-                    interest += xs[i].balance * 0.01 / 12
-                }
-            }
-            val a2d = BigDecimal(interest).setScale(2, RoundingMode.HALF_UP)
-            xs[i].balance += a2d.toDouble()
+        xs.forEach { deposit ->
+            // `0.0 +` mirrors the legacy accumulator: it turns a -0.0 interest into 0.0
+            val interest = 0.0 + (plansByCode[deposit.planType]?.monthlyInterest(deposit.balance, deposit.days) ?: 0.0)
+            deposit.balance += BigDecimal(interest).setScale(2, RoundingMode.HALF_UP).toDouble()
         }
     }
 }

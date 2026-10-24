@@ -198,6 +198,25 @@
                                 </bound>
                             </bounds>
                         </rule>
+                        <rule>
+                            <name>Domain covered</name>
+                            <groupBy>PACKAGE</groupBy>
+                            <filters>
+                                <includes>
+                                    <classes>org.ikigaidigital.timedeposit.domain.*</classes>
+                                </includes>
+                            </filters>
+                            <bounds>
+                                <bound>
+                                    <coverageUnits>LINE</coverageUnits>
+                                    <minValue>100</minValue>
+                                </bound>
+                                <bound>
+                                    <coverageUnits>BRANCH</coverageUnits>
+                                    <minValue>100</minValue>
+                                </bound>
+                            </bounds>
+                        </rule>
                     </rules>
                 </configuration>
             </plugin>

@@ -16,6 +16,10 @@ _Avoid_: Plan, product, tier
 How long the time deposit has existed; interest eligibility is decided from it.
 _Avoid_: Age, term, duration
 
+**Eligible days**:
+The range of days in which a plan type earns monthly interest.
+_Avoid_: Interest window, active period
+
 **Balance**:
 The current amount held in a time deposit.
 _Avoid_: Amount, principal
