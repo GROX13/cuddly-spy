@@ -40,6 +40,7 @@ The Cursor and Copilot hook scripts need `jq` on the PATH.
 ## Setup
 
 1. Install JDK 17, Maven, Docker, and at least one agent above.
+   - Cursor and Copilot also need `jq` for their hook scripts. Recent macOS ships it at `/usr/bin/jq`; otherwise run `brew install jq` or `apt install jq`.
 2. Enable the guardrails: `git config core.hooksPath .githooks`.
 3. Optional local env: `cp .envrc.example .envrc && direnv allow`. `CONTEXT7_API_KEY` is optional because Context7 works anonymously; a key only raises rate limits.
 4. Start your agent in the repo root and trust the folder.
