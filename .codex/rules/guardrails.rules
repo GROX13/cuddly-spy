@@ -179,6 +179,6 @@ prefix_rule(
     pattern = ["mvn", ["-f", "--file"], "kotlin/pom.xml"],
     decision = "allow",
     justification = "Project test command from AGENTS.md.",
-    match = ["mvn -f kotlin/pom.xml test", "mvn -f kotlin/pom.xml -Dtest=FooTest test"],
+    match = ["mvn -f kotlin/pom.xml test", "mvn -f kotlin/pom.xml verify", "mvn -f kotlin/pom.xml -Dtest=FooTest test"],
     not_match = ["mvn test", "mvn -f other/pom.xml test"],
 )

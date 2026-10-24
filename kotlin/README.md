@@ -13,8 +13,10 @@ Kotlin solution to the assignment in the [root README](../README.md).
 From the repo root:
 
 ```sh
-mvn -f kotlin/pom.xml test
+mvn -f kotlin/pom.xml verify
 ```
+
+This runs the tests and the Kover coverage gate. The coverage report is at `kotlin/target/site/kover/html/index.html`.
 
 ## Running the API / Swagger
 

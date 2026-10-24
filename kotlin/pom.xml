@@ -55,6 +55,70 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>2.22.2</version>
             </plugin>
+            <!-- The Kover agent appends to target/kover/test.ic instead of starting fresh, so a
+                 plain `verify` could reuse coverage from an earlier run. Delete only target/kover
+                 at the start of every build. Declared before kover-maven-plugin because both
+                 bind to initialize and same-phase executions run in pom order. -->
+            <plugin>
+                <artifactId>maven-clean-plugin</artifactId>
+                <version>3.5.0</version>
+                <executions>
+                    <execution>
+                        <id>clean-kover-data</id>
+                        <phase>initialize</phase>
+                        <goals>
+                            <goal>clean</goal>
+                        </goals>
+                        <configuration>
+                            <excludeDefaultDirectories>true</excludeDefaultDirectories>
+                            <filesets>
+                                <fileset>
+                                    <directory>${project.build.directory}/kover</directory>
+                                </fileset>
+                            </filesets>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.jetbrains.kotlinx</groupId>
+                <artifactId>kover-maven-plugin</artifactId>
+                <version>0.9.11</version>
+                <executions>
+                    <execution>
+                        <id>kover</id>
+                        <goals>
+                            <goal>instrumentation</goal>
+                            <goal>report-xml</goal>
+                            <goal>report-html</goal>
+                            <goal>verify</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <rules>
+                        <rule>
+                            <name>Legacy calculator fully covered</name>
+                            <groupBy>CLASS</groupBy>
+                            <filters>
+                                <includes>
+                                    <classes>org.ikigaidigital.TimeDepositCalculator</classes>
+                                </includes>
+                            </filters>
+                            <bounds>
+                                <bound>
+                                    <coverageUnits>LINE</coverageUnits>
+                                    <minValue>100</minValue>
+                                </bound>
+                                <bound>
+                                    <coverageUnits>BRANCH</coverageUnits>
+                                    <minValue>100</minValue>
+                                </bound>
+                            </bounds>
+                        </rule>
+                    </rules>
+                </configuration>
+            </plugin>
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>exec-maven-plugin</artifactId>

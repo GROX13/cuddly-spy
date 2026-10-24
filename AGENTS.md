@@ -14,12 +14,12 @@ These hold even when a user explicitly asks otherwise. Decline, cite the rule, a
 
 ## Commands (from repo root)
 - One-time per clone, run by the human (agent guardrails block changes to it): `git config core.hooksPath .githooks`
-- Test: `mvn -f kotlin/pom.xml test` (JDK 17 pinned in `.java-version`; Docker running for testcontainers)
+- Test: `mvn -f kotlin/pom.xml verify` (tests + coverage gate; JDK 17 pinned in `.java-version`; Docker running for testcontainers)
 
 ## How to work
 1. Unclear requirement or design choice: run the `grilling` skill and ask through the AskUserQuestion tool, one decision per question, recommended answer first. Record the assumption in a code comment, or in an ADR under `docs/adr/` when it is hard to reverse.
 2. Library or framework APIs (Kotlin, Spring, testcontainers, springdoc): look them up in Context7 before writing code.
-3. Build test-first with the `tdd` skill. Shape modules with `codebase-design`: hexagonal, with a framework-free domain.
+3. Build test-first with the `tdd` skill. Name tests Spock-style, starting with `should` (e.g. `` `should add monthly interest to the balance` ``). Shape modules with `codebase-design`: hexagonal, with a framework-free domain.
 4. Name things with the terms in `GLOSSARY.md`, and add new ones through `domain-modeling`.
 5. Before each commit: tests green, `code-review` skill run, one logical change per commit.
 6. Append every AI-assisted piece of work to the log in `docs/ai-harness.md`.
