@@ -41,9 +41,9 @@ class JpaTimeDepositAdapter(private val repository: SpringDataTimeDepositReposit
             .map { it.toSnapshot() }
 
     /**
-     * Assigns final decimal balances to managed entities. After [loadAllForUpdate], `findById` resolves
-     * them from the same persistence context without another SELECT. Hibernate flushes only dirty
-     * balances at commit; missing ids fail rather than being silently skipped.
+     * Assigns final decimal balances to managed entities; Hibernate's dirty checking writes the changed
+     * ones at flush, so no `save` is needed. After [loadAllForUpdate], `findById` resolves them from the
+     * same persistence context without another SELECT. Missing ids fail rather than being skipped.
      */
     override fun saveBalances(balances: Map<Int, BigDecimal>) {
         balances.forEach { (id, balance) ->
@@ -51,7 +51,6 @@ class JpaTimeDepositAdapter(private val repository: SpringDataTimeDepositReposit
                 "No time deposit with id $id"
             }
             entity.balance = balance
-            repository.save(entity)
         }
     }
 }
