@@ -9,4 +9,4 @@ An agent can follow an explicit user request over `AGENTS.md`: in a test run Cod
 
 ## Consequences
 - No single layer is trusted on its own; the known gaps of each are listed in `docs/ai-harness.md` (Known limitations).
-- Everything above runs locally, so a human can still bypass it. A CI check on pull requests would be the next layer.
+- Everything above runs locally, so a human can still bypass it. The `Verify` GitHub Actions workflow (`.github/workflows/verify.yml`) is the backstop: it re-runs layer 4 with `clean verify` on every push to `main` and every pull request that touches `kotlin/`.
