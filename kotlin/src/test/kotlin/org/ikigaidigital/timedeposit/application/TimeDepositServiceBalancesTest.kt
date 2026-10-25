@@ -6,7 +6,10 @@ import org.ikigaidigital.timedeposit.domain.TimeDepositStatement
 import org.junit.jupiter.api.Test
 import java.math.BigDecimal
 
-/** Literal results pin ADR 0015's existing behavior, including its large-balance limitation. */
+/**
+ * Literal results pin ADR 0015's rounding cases. TimeDepositServiceUpstreamBalancesTest covers the
+ * range between them against the upstream calculator.
+ */
 class TimeDepositServiceBalancesTest {
 
     @Test
@@ -47,12 +50,6 @@ class TimeDepositServiceBalancesTest {
     @Test
     fun `should preserve the maximum stored balance when no interest is earned`() {
         assertUpdatedBalance("student", 400, "99999999999999999.99", "99999999999999999.99")
-    }
-
-    @Test
-    fun `should preserve the existing delta result for a large earning balance`() {
-        // The recovered Double delta is .52 interest, not the calculator's .51 (ADR 0015).
-        assertUpdatedBalance("basic", 31, "90071992547409.91", "90147052541199.43")
     }
 
     private fun assertUpdatedBalance(planType: String, days: Int, stored: String, expected: String) {
