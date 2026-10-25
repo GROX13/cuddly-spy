@@ -8,4 +8,4 @@ services:
       POSTGRES_USER: kata
       POSTGRES_PASSWORD: kata
     ports:
-      - "5432:5432"
+      - "5432"
