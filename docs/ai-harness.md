@@ -1,204 +1,118 @@
 # AI harness
 
-How this repo is developed with AI agents, and how to reproduce the setup. Agent-facing rules are in [`AGENTS.md`](../AGENTS.md). The harness works with any model; pick whichever suits you.
+How this repo was built with AI coding agents, and how to reproduce the setup. The rules the agents follow are in [`AGENTS.md`](../AGENTS.md); the design decisions are in [`docs/adr/`](adr/README.md).
 
 ## Tools
 
 | Tool | Role | Configured in |
 |---|---|---|
-| Coding agent (Claude Code, Codex, Cursor, Gemini CLI or Copilot in VS Code) | Writes and refactors code under the `AGENTS.md` rules | see [Agents](#agents) |
-| Context7 MCP | Current library docs (Kotlin, Spring, testcontainers, springdoc) | per-agent config, see [Agents](#agents) |
-| mattpocock skills | Workflow skills: `grilling`, `tdd`, `codebase-design`, `domain-modeling`, `code-review`, `pr` | `.agents/skills/`; for Claude Code, the `mattpocock-skills` plugin |
-| `kotlin-lsp` plugin (Claude Code) | Kotlin code intelligence (diagnostics, go-to-definition) | `.claude/settings.json` |
-| `claude-md-management` plugin (Claude Code) | Keeps `AGENTS.md` accurate as the project changes | `.claude/settings.json` |
-| AskUserQuestion (Claude Code built-in) | Structured multiple-choice clarification with a recommended answer. Other agents ask the same questions in chat | `AGENTS.md` |
-| Git pre-commit hook | Agent-agnostic guardrails | `.githooks/pre-commit` |
-| GitHub Actions `Verify` | Runs `clean verify` (JDK 17, Docker) on pushes to `main` and on pull requests that touch `kotlin/`, independent of local hooks | `.github/workflows/verify.yml` |
-| IntelliJ IDEA MCP (optional, personal) | IDE-backed inspections, refactors and run configs | user scope, not committed |
+| Coding agent: Claude Code (main), Codex (reviews and fixes); Cursor, Gemini CLI and Copilot configured too | Writes, tests and refactors code under the `AGENTS.md` rules | see [Agents](#agents) |
+| Context7 MCP | Current library docs (Kotlin, Spring Boot 4, Testcontainers, springdoc) before writing code | per-agent config |
+| mattpocock skills | Workflow skills: `grilling`, `tdd`, `codebase-design`, `domain-modeling`, `code-review` | `.agents/skills/` (pinned); Claude Code plugin `mattpocock-skills` |
+| `kotlin-lsp`, `claude-md-management` plugins | Kotlin diagnostics; keeping `AGENTS.md` accurate | `.claude/settings.json` |
+| Git pre-commit hook | Agent-agnostic guardrails and `mvn verify` | `.githooks/pre-commit` |
+| GitHub Actions | `Verify` runs `clean verify`; `Harness fixtures` checks the hook decisions | `.github/workflows/` |
 
 ## Agents
 
-All agents share `AGENTS.md`, the vendored skills, the hook and Context7. Only the config file format differs.
+All agents share `AGENTS.md`, the vendored skills, the hook and Context7; only the config format differs (ADR 0004).
 
-| Agent | Rules | Context7 | Skills | Guardrails |
-|---|---|---|---|---|
-| Claude Code | `CLAUDE.md` → `AGENTS.md` | `.mcp.json` | plugin via `.claude/settings.json` | `.claude/settings.json` permissions + hook |
-| Codex CLI | `AGENTS.md` | `.codex/config.toml` | `.agents/skills/` | `.codex/rules/` + `kata` sandbox profile + hook |
-| Cursor | `AGENTS.md` | `.cursor/mcp.json` | `.agents/skills/` | `.cursor/hooks.json` + `cli.json`/`permissions.json` + hook |
-| Gemini CLI | `AGENTS.md` (via `.gemini/settings.json`) | `.gemini/settings.json` | `.agents/skills/` | `.gemini/policies/` + hook |
-| Copilot (VS Code) | `AGENTS.md` | `.mcp.json` | `.agents/skills/` | `.github/hooks/` + `.vscode/settings.json` + hook |
-
-Each agent only loads project config after you trust the folder. Start each one from the repo root: Codex's sandbox profile and Gemini's policy path are resolved relative to where it starts.
-
-- Claude Code: accept the trust prompt.
-- Codex: trust the project when prompted.
-- Gemini: run `/permissions` → trust.
-- Cursor: trust the workspace, approve the MCP server, and check that Settings → Hooks lists both hooks.
-- Copilot: trust the workspace (hooks only run in trusted workspaces).
-
-The Cursor and Copilot hook scripts need `jq` on the PATH.
+| Agent | Rules | Guardrails | Tested in a real session |
+|---|---|---|---|
+| Claude Code | `CLAUDE.md` → `AGENTS.md` | `.claude/settings.json` permissions | Yes, used for most of the work |
+| Codex CLI | `AGENTS.md` | `.codex/rules/guardrails.rules`, `kata` sandbox profile in `.codex/config.toml` | Yes, used for reviews and fixes |
+| Cursor | `AGENTS.md` | `.cursor/hooks.json` hook scripts | No: hook scripts checked with fixtures |
+| Gemini CLI | `AGENTS.md` via `.gemini/settings.json` | `.gemini/policies/guardrails.toml` | No: rules evaluated with Gemini's policy engine |
+| Copilot (VS Code) | `AGENTS.md` | `.github/hooks/guardrails.sh`, `.vscode/settings.json` | No: hook script checked with fixtures |
 
 ## Setup
 
-1. Install JDK 17, Maven, Docker, and at least one agent above.
-   - Cursor and Copilot also need `jq` for their hook scripts. Recent macOS ships it at `/usr/bin/jq`; otherwise run `brew install jq` or `apt install jq`.
-2. Enable the guardrails: `git config core.hooksPath .githooks`.
-3. Optional local env: `cp .envrc.example .envrc && direnv allow`. `CONTEXT7_API_KEY` is optional because Context7 works anonymously; a key only raises rate limits.
-4. Start your agent in the repo root and trust the folder.
-5. Claude Code only:
-   - Install the Kotlin LSP binary: `brew install JetBrains/utils/kotlin-lsp`.
-   - If the plugins aren't installed automatically, run `/plugin install mattpocock-skills@claude-plugins-official` (and the same for `kotlin-lsp` and `claude-md-management`).
-6. Check: the agent's MCP list shows `context7` as connected, and the `grilling` skill is listed.
+1. Install JDK 17 (pinned in `.java-version`), Maven 3.9+, Docker and at least one agent. The Cursor and Copilot hooks also need `jq`.
+2. Enable the hook once per clone: `git config core.hooksPath .githooks`.
+3. Optional: `cp .envrc.example .envrc && direnv allow`. A `CONTEXT7_API_KEY` only raises rate limits.
+4. Start the agent in the repo root and trust the folder (Gemini: `/permissions` → trust; Cursor: also approve the MCP server and check that both hooks are listed).
+5. Claude Code: `brew install JetBrains/utils/kotlin-lsp`. If the plugins aren't installed automatically, run `/plugin install mattpocock-skills@claude-plugins-official`, and the same for `kotlin-lsp` and `claude-md-management`.
+6. Check that the agent lists `context7` as connected and the `grilling` skill as available.
 
 Personal overrides go in gitignored files: `.claude/settings.local.json`, `CLAUDE.local.md`, `.envrc`.
 
+## Workflow
+
+1. **Clarify**: `grilling` with structured questions, one decision per question with a recommended answer. Assumptions go in code comments, or in an ADR when they are hard to reverse.
+2. **Look up**: Context7 for any framework API before writing code.
+3. **Build**: `tdd` red-green-refactor, with `codebase-design` for the hexagonal seams. Larger phases used a planner, an implementer subagent and an independent validator subagent.
+4. **Review and commit**: tests green, `code-review`, one logical change per commit.
+
 ## Guardrails
 
-- **Every agent** (`.githooks/pre-commit`):
-  - commits touching the assignment `README.md` are rejected
-  - commits touching `kotlin/` run the tests first
-- **Claude Code** (`.claude/settings.json`):
-  - allowed without prompting: `mvn`, `docker ps`, read-only git, Context7
-  - asks first: `git push`
-  - denied: force push, `git reset --hard`, `git clean`, editing `README.md`, the characterization tests (`TimeDepositCalculatorTest.kt`) or `ArchitectureTest.kt`, `git commit` with `--no-verify` (anywhere in the command) or `-n`, and any git command mentioning `core.hooksPath` (reading it included)
+Rules are enforced in layers, because an agent can put an explicit request ahead of `AGENTS.md` (ADR 0005).
+
+- **Every agent and human** (`.githooks/pre-commit`): rejects staged changes to `README.md`, `TimeDepositCalculatorTest.kt` and `ArchitectureTest.kt` (deletions and renames included), and runs `mvn verify` when `kotlin/` changes.
+- **Claude Code**:
+  - allowed without asking: `mvn`, `docker ps`, read-only git, Context7;
+  - asks first: `git push`;
+  - denied: force push, `git reset --hard`, `git clean`, `--no-verify`/`-n`, anything mentioning `core.hooksPath`, and edits to the three protected files.
 - **Codex**:
-  - `.codex/rules/guardrails.rules`, enforced even in full-access mode:
-    - forbidden: `--no-verify`/`-n` (when placed before the message), changing `core.hooksPath`, force push, `git reset --hard`, `git clean`
-    - asks first: `git push`, and git with global options (`-c`, `-C`, `--git-dir`)
-    - allowed without prompting: `mvn -f kotlin/pom.xml …`
-  - `.codex/config.toml` sandbox profile `kata`: workspace-write with `README.md`, the characterization tests and `ArchitectureTest.kt` read-only. It's off in full-access mode.
-  - check a command: `codex execpolicy check --rules .codex/rules/guardrails.rules git commit -n -m x`
-- **Cursor** (`.cursor/hooks.json`, editor and CLI):
-  - `guard-shell.sh` denies hook bypasses, `core.hooksPath` changes, force push, `git reset --hard` and `git clean`, and asks before `git push`
-  - `guard-readme.sh` denies writes to `README.md`, the characterization tests and `ArchitectureTest.kt`
-  - `permissions.json`/`cli.json` allow `mvn`, read-only git and Context7; they can't deny anything, so all blocking lives in the hooks
-  - check: `echo '{"command":"git push -f"}' | .cursor/hooks/guard-shell.sh`
-- **Gemini CLI** (`.gemini/policies/guardrails.toml`):
-  - loaded through `policyPaths` in `.gemini/settings.json`, because Gemini ignores workspace policies on its own
-  - denies writes to `README.md`, the characterization tests and `ArchitectureTest.kt`, hook bypasses, force push, `git reset --hard` and `git clean`
-  - asks before `git push`, even in YOLO mode
-  - allows `mvn`, read-only git and Context7
-  - check: `/policies list` shows the rules under the User tier
-- **Copilot in VS Code**:
-  - `.github/hooks/guardrails.sh` (PreToolUse) denies edits to `README.md`, the characterization tests and `ArchitectureTest.kt`, hook bypasses, force push, `git reset --hard` and `git clean`, and asks before `git push`
-  - `.vscode/settings.json` auto-approves `mvn` and read-only git. Its `false` rules only require approval; the hook is what blocks, including under Allow all or Autopilot.
-  - Context7 tools are approved once in the UI (**Chat: Manage Tool Approval**)
-
-How these layers fit together, and why instructions alone aren't enough: [ADR 0005](adr/0005-layered-enforcement.md). Their gaps are listed under [Known limitations](#known-limitations).
-
-## Design decisions
-
-| ADR | Decision |
-|---|---|
-| [0004](adr/0004-support-multiple-agents.md) | One `AGENTS.md` and one skills folder for every agent; per-agent folders only for what can't be shared |
-| [0005](adr/0005-layered-enforcement.md) | Rules enforced in layers: `AGENTS.md` → per-agent rules → pre-commit hook → tests, with CI re-running the tests |
-| [0006](adr/0006-preserve-behaviour-with-characterization-and-coverage.md) | Characterization tests with pinned quirks plus a 100% line/branch gate protect the legacy calculator during AI refactoring |
-| [0007](adr/0007-enforce-hexagonal-boundaries-with-archunit.md) | ArchUnit tests stop generated code from crossing hexagonal boundaries |
-| [0008](adr/0008-balance-update-applies-interest-every-call.md) | Every balance update applies one monthly interest; no idempotency guard, matching the calculator |
-| [0009](adr/0009-plan-types-as-data-in-a-sealed-class.md) | Plan types are data (code, annual rate, eligible days) in a sealed class; the calculator looks them up by code |
-| [0010](adr/0010-spring-data-repository-implements-the-port.md) | ~~A Spring Data repository implements the plain-Kotlin persistence port through default methods; no hand-written adapter class~~ Superseded by 0016 |
-| [0011](adr/0011-plain-use-cases-wired-in-a-root-configuration.md) | Use cases are plain Spring-free classes created in a root `UseCaseConfiguration`; no inbound port interfaces, no `@Service` in the core (amended by 0016) |
-| [0012](adr/0012-transactions-port.md) | ~~The balance update owns its transaction through a Spring-free `Transactions` port~~ Superseded by 0014 |
-| [0013](adr/0013-move-legacy-classes-into-the-domain-package.md) | `TimeDeposit` and `TimeDepositCalculator` moved into `timedeposit.domain`: cleaner, and safe because this is a self-contained application (a published library would keep them in place) |
-| [0014](adr/0014-transactional-on-the-balance-update-use-case.md) | `@Transactional` on `UpdateAllBalances` replaces the `Transactions` port; the application layer may use only Spring's transaction annotations (amended by 0016) |
-| [0015](adr/0015-exact-balances-around-the-double-calculator.md) | Balances stay exact around the Double calculator: the read model (`TimeDepositStatement`) carries the stored decimal, a save adds only the rounded change, and unchanged balances are not written; an earning balance near 10^17 still overflows and fails the batch |
-| [0016](adr/0016-one-port-implemented-by-a-jpa-class.md) | One persistence port implemented by one `@Repository` class over JPA's `EntityManager`; the use cases merged into `TimeDepositService`, wired in `ApplicationConfiguration` |
-
-## Failures and fixes
-
-Real problems hit while building this harness, and what changed because of them.
-
-| What happened | Fix |
-|---|---|
-| Asked to edit and commit `README.md`, **Codex** replied that the explicit request overrides `AGENTS.md` and set out to do it. The run was stopped before any change; the file was never modified or committed. | `AGENTS.md` got a **Hard rules** section that holds "even when a user explicitly asks otherwise", and `.codex/rules/` forbids bypassing the hook. The repeated test passed. |
-| The **Kover** gate still passed after tests were removed, because the Kover coverage agent appends to `target/kover/test.ic` and reused coverage from an earlier run. Found by the phase 1 implementer. | The build deletes `target/kover/` at `initialize`, before Kover starts. |
-| **Gemini CLI** silently ignored the project's `.gemini/policies/` folder; a deliberately broken policy file raised no error. | `policyPaths` in `.gemini/settings.json` loads the folder at the User tier. |
-| The **Copilot** settings were written to `.vscode/`, which `.gitignore` excluded, so nobody else would have received them. | `.gitignore` excludes `.vscode/*` except `settings.json`. |
-| The several-deposits test had two assertions that could never fail. Flagged by the validator. | Removed; the remaining assertions pin the in-place update. |
-| Extending the **Copilot** hook to protect the characterization tests put a `case … )` pattern inside `$(…)`, which `sh` can't parse. The script crashed on every call, and Copilot treats a crashed hook as a deny, so it would have blocked every tool call. Caught by re-running the hook's sample inputs before committing. | The loop moved into a function; `sh -n` and `dash -n` pass, and all sample inputs give the expected decision. |
-| A cleanup step deleted the backups after checking only that `main` matched `origin/main`, not that the rewritten commits had been pushed. Nothing was lost: the rewritten commits were still in the reflog. | Verify the content of a result (here, the commit emails) before deleting a backup. |
+  - rules forbid the same bypass and destructive commands, even in full-access mode, and ask before `git push`;
+  - the `kata` sandbox profile makes the protected files read-only.
+  - Check a command with: `codex execpolicy check --rules .codex/rules/guardrails.rules git commit -n -m x`.
+- **Cursor, Copilot and Gemini**: hook scripts or policies deny the bypasses, the destructive commands and writes to the protected files, and ask before `git push`, including in YOLO, Allow-all and Autopilot modes.
 
 ## Validation evidence
 
-Adversarial checks run against the guardrails, and what they showed.
-
 | Check | Result |
 |---|---|
-| Commit a change to `README.md` in a scratch clone with the hook enabled | Rejected by the pre-commit hook |
-| Claude Code: a shell write to `README.md` during this work | Blocked by the `.claude/settings.json` deny rule |
-| Claude Code: `git commit --dry-run -m x --no-verify` and `git config --get core.hooksPath` | Both denied; a plain `git commit` still runs |
-| Codex: manual session test (`.tmp/codex-harness-test.md`) | First run failed the README step (see above); passed after the fix |
-| Codex: `codex execpolicy check` on bypass and destructive commands | `--no-verify`/`-n` (before the message), `core.hooksPath` changes, force push variants, `git reset --hard` and `git clean` forbidden; `git push` prompts; plain `git commit` matches no rule (normal sandbox and approval apply) |
-| Codex: shell write to `README.md` inside the `kata` sandbox | `Operation not permitted` |
-| Protected-test lock (`TimeDepositCalculatorTest.kt`, `ArchitectureTest.kt`): Claude Code Edit, Codex `kata` sandbox write, Cursor and Copilot hooks (incl. Copilot `apply_patch`), Gemini policy pattern | All denied; another test file in the same folder stays editable |
-| Cursor and Copilot hook scripts fed scripted tool-call inputs | Denies, asks and allows as intended; not run inside Cursor or VS Code |
-| Gemini: rules evaluated with Gemini's own policy engine in default, auto-edit, YOLO and non-interactive modes | Denies and asks as intended, including in YOLO; skills and Context7 listed; no model session (no API key) |
-| Kover: remove every test reaching one branch, run plain `verify` without cleaning | Fails at 92.86% branch coverage |
+| Commit a change to `README.md` or a protected test with the hook enabled | Rejected by the hook; `python3 .githooks/tests/check_guardrails.py` replays this on synthetic repositories |
+| Claude Code: shell write to `README.md`; `git commit --no-verify`; `git config --get core.hooksPath` | All denied |
+| Codex: manual session asked to edit and commit `README.md` | First run tried to comply; passed after the Hard rules fix (see below) |
+| Codex: `codex execpolicy check` on bypass and destructive commands; write to `README.md` in the `kata` sandbox | Forbidden; `Operation not permitted` |
+| Cursor and Copilot hook scripts fed tracked payload fixtures | Expected deny, ask and allow decisions; not run inside the editors |
+| Gemini rules in its policy engine (default, auto-edit, YOLO, non-interactive) | Deny and ask as intended; no model session |
+| Kover: remove every test reaching one branch, run `verify` | Fails the gate |
 | ArchUnit: add a Spring class to `domain`, and a web→persistence dependency | Each fails its rule |
-| Build with no Docker socket available (run inside a container) | Integration tests skipped. Green in phase 2; since phase 4 the persistence coverage gate fails, as intended |
-| Characterization values | The validator re-derived 10 expected values independently; all matched |
+| Calculator: upstream copy vs current on about 220k seeded inputs (`TimeDepositCalculatorDifferentialTest`) | Bit-identical; a mutated plan boundary fails it |
+| Lock: remove `@Lock` from `findAllForUpdate` | The concurrency IT loses a month and the lock ITs fail |
 
 ## Known limitations
 
-- **Instructions are not guarantees.** `AGENTS.md` is read and usually followed, but an agent can put an explicit request first. That's why the hard layers exist.
-- **Local hooks can be bypassed.** A human can commit with `--no-verify`, and each clone must run `git config core.hooksPath .githooks` once. The `Verify` workflow re-runs `clean verify` on every push to `main` and every pull request that touches `kotlin/`, so a bypassed hook is caught after the push, not before. It doesn't recheck the `README.md` rule, which only the hook enforces.
-- **Pattern-based rules have gaps.**
-  - Codex prefix rules miss `git commit -m x --no-verify` (flag after the message), and Codex doesn't split shell scripts that use redirects, `$(...)`, `VAR=` prefixes or globs, so those match no rule.
-  - Shell writes such as `echo >> README.md` (or to the characterization tests) are only stopped by Claude Code's deny rule and Codex's sandbox; everywhere else the commit-time hook is the backstop. Claude Code's blocking is itself pattern-based, and other write paths (`tee`, `sed -i`) weren't tested.
-  - Bundled short flags such as `git commit -anm x` aren't denied by Claude Code's rules (matching `-n` inside bundles would also block ordinary messages); the hook still runs for those.
-  - Claude Code's rules match the whole command text, so a commit whose inline `-m` message mentions the hook-bypass flag or the hooks-path setting is denied too. Commit with the message in a file (`git commit -F <file>`) instead.
-- **Uneven testing across agents.** Claude Code and Codex were exercised in real sessions. Cursor and Copilot were tested only through their hook scripts; Gemini through its policy engine, without a model session.
-- **Docker is required to commit Kotlin changes.** Integration tests skip without Docker, and since phase 4 the persistence coverage gate is reached only by them, so `verify`, and with it the pre-commit hook, fails while Docker is down. Chosen deliberately: untested persistence code can't be committed. (Until phase 4, commits passed without Docker.)
-- **Coverage gate.** One Kover rule gates everything under `org.ikigaidigital.timedeposit` (domain with the legacy calculator, application, both adapters) at 100% line and branch; the root package (`main` and `ApplicationConfiguration`) is only reported. The persistence adapter is reached only by the Failsafe integration tests, so the gate fails when Docker is down and those tests skip. A plain `verify` can give false coverage results from stale class files left in `target/` after a source file is deleted or renamed (the Kotlin compiler doesn't remove them, and Kover counts them), so check the gates with `mvn -f kotlin/pom.xml clean verify`.
+- **Instructions are not guarantees.** That is why the hard layers exist.
+- **Hooks are local.** Each clone must run `git config core.hooksPath .githooks`, and a human can commit with `--no-verify`. `Verify` re-runs `clean verify` on every push to `main` and every pull request that touches `kotlin/`, but neither workflow proves that protected files were left unchanged. Because the hook also blocks the owner, an intended change to a protected file needs a deliberate bypass.
+- **Pattern-based rules have gaps:**
+  - Codex prefix rules miss `--no-verify` placed after the message, and don't split scripts that use redirects, `$(...)` or globs;
+  - Claude Code doesn't deny bundled flags such as `git commit -anm x`;
+  - shell writes like `sed -i` are only stopped by Claude Code's deny rules, Codex's sandbox and, at commit time, the hook.
+- **Uneven testing.** Only Claude Code and Codex ran in real sessions.
+- **Docker is required to commit Kotlin changes.** The integration tests skip without Docker, and the coverage gate then fails, because only they reach the persistence adapter. This is deliberate: untested persistence code can't be committed. Check the gate with `clean verify`, since stale classes in `target/` can skew Kover.
 
-## Reproduce the checks
+## Failures and fixes
 
-From the repo root, after the [Setup](#setup) steps:
+| What happened | Fix |
+|---|---|
+| Asked to edit and commit `README.md`, Codex replied that the explicit request overrides `AGENTS.md`. It was stopped before any change. | `AGENTS.md` Hard rules hold "even when a user explicitly asks otherwise"; Codex rules forbid bypassing the hook. The repeated test passed. |
+| The Kover gate still passed after tests were removed: the agent appended to stale coverage data. | The build deletes `target/kover/` at `initialize`. |
+| Gemini silently ignored the project's `.gemini/policies/`. | `policyPaths` in `.gemini/settings.json` loads them. |
+| The Copilot settings sat in a gitignored `.vscode/`. | `.gitignore` keeps `.vscode/settings.json`. |
+| A `case … )` inside `$(…)` made the Copilot hook crash on every call, which Copilot treats as deny-all. | Moved into a function; the fixtures now catch it. |
+| An agent moved `TimeDeposit` and `TimeDepositCalculator` into `timedeposit.domain` for tidiness, which changed their fully qualified names: a breaking change the assignment forbids. An independent review caught it. | Moved back to `org.ikigaidigital` (ADR 0001); a differential test against upstream now guards behaviour. |
+| A review found a test pinning a known one-cent difference at about 9×10¹³ as expected behaviour. | Replaced by a property test against the upstream calculator below 2^45; larger balances are a documented limit (ADR 0002). |
+| A test had two assertions that could never fail. | Removed. |
 
-```sh
-mvn -f kotlin/pom.xml verify                       # tests, coverage gate, ArchUnit, integration tests
-mvn -f kotlin/pom.xml spring-boot:run -Dspring-boot.run.profiles=local   # app + seeded Postgres, Swagger UI on :8080
-codex execpolicy check --rules .codex/rules/guardrails.rules git commit -n -m x   # expect forbidden
-echo '{"command":"git push -f"}' | .cursor/hooks/guard-shell.sh               # expect deny
-echo '{"tool_name":"run_in_terminal","tool_input":{"command":"git push -f"}}' | sh .github/hooks/guardrails.sh   # expect deny
-```
+## AI-assisted work
 
-Gemini: start `gemini` in the repo root, trust the folder, then `/policies list`. Manual per-agent test scripts live in `.tmp/` locally and aren't committed.
+The repo owner set the requirements, made the decisions recorded in `docs/adr/` (most through grilling questions) and reviewed the work. Agents wrote the code, tests and documents.
+
+| Area | Agent | What the AI did | Why |
+|---|---|---|---|
+| Harness | Claude Code | Wrote `AGENTS.md`, the per-agent configs, guardrails and hook, vendored the skills, and tested each guardrail (policy engines, `execpolicy`, hook fixtures) | Reproducible, agent-agnostic setup with enforced rules |
+| Behaviour preservation | Claude Code, Codex | Characterization tests with pinned floating-point quirks, independently re-derived by a validator subagent; edge cases captured from upstream; the differential test; the Kover gate | `updateBalance` must stay bit-identical through the refactor |
+| Domain | Claude Code | Moved the plan rules into the `PlanType` sealed class, test-first, and verified old against new bit for bit | Extensible interest rules without touching the frozen contract |
+| Foundation and persistence | Claude Code, Codex | Spring Boot 4 build, Liquibase schema and seed, Testcontainers, the port and JPA adapter, after checking Boot 4, Hibernate 7 and Spring Data APIs in Context7 | Real database behaviour tested against real Postgres |
+| API | Claude Code | `GET` and `POST` outside-in from HTTP integration tests, the OpenAPI annotations and a test that pins exactly two operations | The two required endpoints with a checked Swagger contract |
+| Money exactness and locking | Claude Code, Codex | Found that the Double lost cents on large balances, kept stored decimals exact, measured the remaining error, and added row locks with a concurrency test | Correct persisted balances and no lost months |
+| Reviews and cleanup | Codex, Claude Code | Independent reviews (including a differential run and mutants), the fixes listed above, and consolidating 17 ADRs into 9 | A submission that matches the assignment and is quick to read |
 
 ## Keeping skills up to date
 
 `.agents/skills/skills.lock` pins the upstream mattpocock/skills commit.
-- `scripts/sync-skills.sh latest` bumps to upstream HEAD; `scripts/sync-skills.sh <sha>` pins a commit. Review the diff and commit it.
-- `.github/workflows/sync-skills.yml` runs weekly and opens a PR only when skill content changed. It needs *Settings → Actions → General → Allow GitHub Actions to create and approve pull requests*.
-- The Claude Code plugin updates separately through `/plugin update`.
-
-Details: [`.agents/skills/README.md`](../.agents/skills/README.md).
-
-## Workflow
-
-1. **Clarify**: the `grilling` skill plus structured questions until the decision tree is settled. Assumptions go in code comments, or in ADRs (`docs/adr/`) when they're hard to reverse.
-2. **Look up**: Context7 for any framework API before writing code.
-3. **Build**: `tdd` red-green-refactor, with `codebase-design` for hexagonal seams.
-4. **Review and commit**: `code-review`, tests green, atomic commits.
-
-## AI-assisted log
-
-| Area | Agent / model | What the AI did | Why |
-|---|---|---|---|
-| Harness setup | Claude Code / Claude Opus 5.5 | Interviewed for requirements (grilling + AskUserQuestion), checked the Claude Code config syntax via Context7, and wrote `AGENTS.md`, `.claude/settings.json`, `.mcp.json`, `GLOSSARY.md`, ADR 0001, `docs/agents/*` | Reproducible agent setup is a stated requirement. The interview surfaced decisions before any files were written |
-| Multi-agent harness | Claude Code / Claude Opus 5.5 | Checked the Codex, Cursor and Gemini config formats via Context7, added their configs, vendored the skills into `.agents/skills/`, and added the pre-commit hook | Lets contributors use any agent with the same rules, docs lookup and skills |
-| Per-agent guardrails and skill sync | Claude Code / Claude Opus 5.5 (one subagent per agent) | Researched each agent's guardrail mechanism via Context7, wrote the Cursor/Copilot hooks, Gemini policies and Codex rules plus sandbox profile, and tested them locally (Gemini's policy engine, `codex execpolicy check`, sample hook inputs). Added the pinned skill sync script and weekly CI | Same guardrails whatever agent is used; vendored skills stay current through reviewed PRs |
-| Phase 1: characterization tests + coverage gate | Claude Code / Claude Opus 5.5 (grilling + plan, then an implementer and an independent validator subagent) | Pinned `updateBalance`'s current behaviour, floating-point rounding quirks included, in 52 tests. Gated `TimeDepositCalculator` at 100% line/branch with Kover. Found and fixed Kover reusing stale coverage data. The validator re-derived 10 values independently | The frozen calculator must behave identically through the framework upgrade and the refactor; the gate proves the tests reach every branch |
-| Phase 2: Spring Boot foundation | Claude Code / Claude Opus 5.5 (grilling + plan, then an implementer and an independent validator subagent) | Upgraded the Maven build to Spring Boot 4.1 / Kotlin 2.3 and checked the Boot 4 module names, springdoc compatibility and Testcontainers 2 artifacts against Context7 and Maven Central. Added the Liquibase schema with a local-only seed, Postgres via Docker Compose and Testcontainers, Swagger UI and ArchUnit layer rules. Proved the ITs skip without Docker by running the build in a container with no Docker socket | Gives the API phases a real database, schema and enforced hexagonal boundaries while the 52 characterization tests stay unchanged and green |
-| Harness decisions and evidence | Claude Code / Claude Opus 5.5 (written by the main session, fact-checked by an independent validator subagent) | Wrote ADRs 0004–0007 and the Failures and fixes, Validation evidence, Known limitations and Reproduce the checks sections from this session's real history | Makes the harness's reasoning, its tested guarantees and its gaps visible to reviewers and future contributors |
-| Protected tests and repeated updates | Claude Code / Claude Opus 5.5 | Added a characterization test pinning that repeated `updateBalance` calls compound, locked `TimeDepositCalculatorTest.kt` and `ArchitectureTest.kt` against agent edits in every agent's config, wrote ADR 0008, and found and fixed a crash in the Copilot hook while testing the lock | Keeps AI refactors from changing the tests that prove behaviour and boundaries are preserved, and records how the update endpoint will behave |
-| Phase 3: plan types as data | Claude Code / Claude Opus 5.5 (grilling + plan, then an implementer and an independent validator subagent) | Wrote `PlanTypeTest` and a calculator-plans test first, moved the per-plan rules into a `PlanType` sealed class with the calculator refactored around it, added a 100% Kover gate on the domain package, wrote ADR 0009. Showed that a companion listing its own subclasses captures `null` when a subclass is touched first, and removed the trap by moving the plan list out of the class. Verified 118,805 old-vs-new comparisons bit for bit with 0 differences | Makes the interest rules extensible as the README asks while the 53 characterization tests and ArchUnit stay unchanged and green |
-| Phase 4: persistence | Claude Code / Claude Opus 5.5 (grilling + plan, then an implementer and an independent validator subagent) | Checked Spring Data JPA 4.1, the Boot 4 `@DataJpaTest` module, Kotlin 2.3's `jpa`/all-open presets and `-jvm-default` against Context7. Wrote `TimeDepositRepositoryIT` first (red on `NotImplementedError` from the default methods, which also showed Spring Data runs them), then the port, the entities and a Spring Data repository whose default methods implement it. Showed each test bites: no `@Lock` fails both lock tests, `new BigDecimal(double)` fails the 2.675 rounding case, and removing one IT case fails the new 100% persistence gate. Found that Hibernate 7 issues `FOR NO KEY UPDATE` on PostgreSQL, and proved the lock blocks a second transaction. Wrote ADR 0010 | Gives the two endpoints a hexagonal, lock-safe persistence layer that matches the Liquibase schema, with no wrapper class |
-| Phase 5: `GET /time-deposits` | Claude Code / Claude Opus 5.5 (grilling + plan, then an implementer and an independent validator subagent) | Checked springdoc 3.2 annotations, the Boot 4 `@WebMvcTest` module and Jackson 3 defaults (dates as ISO strings) against Context7. Outside-in: `TimeDepositsApiIT` first (red on 404) with the exact JSON body as a literal, then `ListTimeDepositsTest` and a `@WebMvcTest` slice over an in-memory port (each red on compile), then the use case, `UseCaseConfiguration` and the web adapter. Added `CoreIsSpringFreeArchitectureTest`, a SwaggerIT guard pinning the operations to `GET /time-deposits`, and 100% Kover gates on `application` and `adapter.web`. Showed the guard fails on an extra `@GetMapping` and the Spring-free rule on a `@Service`. Wrote ADR 0011 | Delivers the README's list endpoint with an exact JSON contract (two-decimal money, ISO dates, withdrawals always present) and enforces the "exactly two endpoints" rule in the build |
-| Phase 6: `POST /time-deposits/balance-updates` | Claude Code / Claude Opus 5.5 (grilling + plan, then an implementer and an independent validator subagent) | Checked `TransactionTemplate` and Spring Data JPA's transactions for query and default methods against Context7. Derived the one- and two-month balances in jshell from the original legacy calculator (two months: 1502.50, 2010.01, 6050.10). Outside-in: `BalanceUpdatesApiIT` first (red on 404), then `UpdateAllBalancesTest` (red on compile) and the web slice (red on 404), then the `Transactions` port, the use case, `TransactionTemplateTransactions`, the beans and the endpoint. Added ITs for compounding, two concurrent updates in 10 rounds, the empty table and rollback, all reading balances back with JDBC; extended the SwaggerIT guard to the two operations. Showed the tests bite: without `@Lock` the concurrent test loses a month, and without the transaction every API IT fails. Wrote ADR 0012 | Delivers the README's update endpoint with a lock-safe, all-or-nothing transaction while the core stays Spring-free and the API stays at exactly two endpoints |
-| Legacy classes moved to the domain package | Claude Code / Claude Opus 5.5 | At the repo owner's request, moved `TimeDeposit` and `TimeDepositCalculator` (with `git mv`) from `org.ikigaidigital` into `timedeposit.domain`, updated every import and the Kover calculator rule, and added only import lines to the two locked test files while the owner had lifted their lock. Wrote ADR 0013 and amended ADR 0001 | A cleaner package layout; the frozen shape, signature and behaviour are unchanged and all tests pass unchanged |
-| `@Transactional` replaces the Transactions port | Claude Code / Claude Opus 5.5 | At the repo owner's request, replaced the `Transactions` port, `TransactionTemplateTransactions` and `FakeTransactions` with a class-level `@Transactional` on `UpdateAllBalances`. Narrowed `CoreIsSpringFreeArchitectureTest` to allow only `org.springframework.transaction.annotation` in the application layer, and replaced the adapter IT with `UpdateAllBalancesTransactionIT` (transactional proxy, rollback after save). Showed that without the annotation every update fails with `No active transaction`. Wrote ADR 0014, superseding 0012 and amending 0011 | One annotation instead of a port and an adapter, with the same lock, save and rollback guarantees |
-| Exact balances around the Double calculator | Claude Code / Claude Opus 5.5 (grilling + plan, then an implementer and an independent validator subagent) | Followed up a Codex review finding: every balance went through the frozen `Double`, so `90071992547409.91` lost a cent on GET and POST, and the column's maximum gave a 500 on a deposit that earns nothing. Test-first, added `balanceAfterUpdate` (stored decimal plus the calculator's change, rounded HALF_UP; unchanged returns the same instance), gave the read model exact fields and renamed it `TimeDepositStatement` (added to `GLOSSARY.md`), and moved the adapters and fakes onto it. Derived the large-balance case in Python by simulating binary64 (90071992547409.91 at basic 31 days saves 90147052541199.43, one cent above the legacy interest) and measured the error bounds over random balances. Added ITs for both reproductions, no UPDATE on an unchanged deposit, and the overflow limit (500 and full rollback). Wrote ADR 0015, amending 0002 and 0010 | Stored balances stay exact on every read and on any deposit that earns nothing, with the frozen calculator and its tests untouched |
-| CI for the Kotlin build | Claude Code / Claude Opus 5.5 | Followed up a Codex review finding that only the skill-sync workflow existed, so published changes had no independent build. Added `.github/workflows/verify.yml`: `mvn -B -f kotlin/pom.xml clean verify` on Temurin from `.java-version` with the Maven cache, on pushes to `main` and pull requests, filtered to `kotlin/**` and the workflow itself. Checked the current `actions/checkout` and `actions/setup-java` majors and the `java-version-file`/`cache` inputs against their releases. Amended ADR 0005 | Tests, ArchUnit rules and coverage gates run on every published Kotlin change, even when a clone never enabled the hook |
-| One port, one JPA class, one service | Claude Code / Claude Opus 5.5 (implementer subagent) | At the repo owner's request, replaced the Spring Data interface that extended the port with one `@Repository` class over `EntityManager`, `JpaTimeDepositRepository` (same JPQL, `PESSIMISTIC_WRITE` lock and `balanceAfterUpdate` save), merged `ListTimeDeposits` and `UpdateAllBalances` into `TimeDepositService` (class-level `@Transactional`, read-only `listAll`), and renamed `UseCaseConfiguration` to `ApplicationConfiguration`, with `git mv` for every rename. Checked the Kotlin `spring` plugin's annotations, Spring's shared `EntityManager` injection and `@DataJpaTest`'s scanning against Context7 and the Boot 4.1 sources. Found that `@DataJpaTest` leaves out exception translation: the unknown-id and proxy tests failed until the IT imported `PersistenceExceptionTranslationAutoConfiguration`, and added an `ApplicationIT` check that the full application translates. Wrote ADR 0016, superseding 0010 and amending 0011 and 0014 | One interface and one class for persistence instead of two tangled interfaces, and one service for the two endpoints, with the same lock, exact balances and rollback guarantees |
-| One Kover coverage gate | Claude Code / Claude Opus 5.5 | At the repo owner's request, replaced the five Kover rules (the legacy calculator plus one per package, all at 100%) with one rule over `org.ikigaidigital.timedeposit.*` at 100% line and branch: 100% in total already means 100% in every class. Showed it bites: an uncovered function added to `adapter.web` fails the rule. Updated ADR 0006, the Known limitations entry and `kotlin/README.md` | A shorter `pom.xml` with the same guarantee |
+- Run `scripts/sync-skills.sh latest` or `scripts/sync-skills.sh <sha>`, then review and commit the diff.
+- `.github/workflows/sync-skills.yml` opens a weekly PR when skill content changed. The Claude Code plugin updates through `/plugin update`.
