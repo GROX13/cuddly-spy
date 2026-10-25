@@ -2,7 +2,6 @@ package org.ikigaidigital
 
 import org.ikigaidigital.timedeposit.application.TimeDepositRepository
 import org.ikigaidigital.timedeposit.application.TimeDepositService
-import org.ikigaidigital.timedeposit.domain.TimeDepositCalculator
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 

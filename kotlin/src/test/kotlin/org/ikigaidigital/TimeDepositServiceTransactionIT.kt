@@ -4,7 +4,6 @@ import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatIllegalStateException
 import org.ikigaidigital.timedeposit.application.TimeDepositRepository
 import org.ikigaidigital.timedeposit.application.TimeDepositService
-import org.ikigaidigital.timedeposit.domain.TimeDepositCalculator
 import org.ikigaidigital.timedeposit.domain.TimeDepositStatement
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach

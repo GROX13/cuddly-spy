@@ -120,8 +120,9 @@ class BalanceUpdatesApiIT {
     /**
      * Two updates sent at the same moment must add two months, not one: the row lock taken by
      * `loadAllForUpdate` makes the second wait for the first to commit, then read its balances.
-     * Without the lock both would read the same balances and one month would be lost. Repeated in
-     * rounds, each from fresh rows, so a lost update can't slip through on lucky timing.
+     * Without the lock overlapping reads could lose a month. Repeated rounds with fresh rows
+     * exercise competing HTTP requests, but the shared start does not guarantee overlapping reads.
+     * TimeDepositRepositoryIT separately verifies lock exclusion deterministically with NOWAIT.
      */
     @Test
     fun `should add exactly two months when two updates run concurrently`() {

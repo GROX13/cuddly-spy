@@ -1,7 +1,7 @@
 package org.ikigaidigital.timedeposit.application
 
-import org.ikigaidigital.timedeposit.domain.TimeDeposit
-import org.ikigaidigital.timedeposit.domain.TimeDepositCalculator
+import org.ikigaidigital.TimeDeposit
+import org.ikigaidigital.TimeDepositCalculator
 import org.ikigaidigital.timedeposit.domain.TimeDepositStatement
 import org.springframework.transaction.annotation.Transactional
 import java.math.BigDecimal

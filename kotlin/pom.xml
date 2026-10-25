@@ -206,9 +206,9 @@
                     </execution>
                 </executions>
                 <configuration>
-                    <!-- One gate for all of org.ikigaidigital.timedeposit (domain with the legacy calculator,
-                         application, both adapters): 100% line and branch in total means 100% in every
-                         class, so per-package rules added nothing. The root package (main and
+                    <!-- One gate for the domain, application, both adapters and the original legacy
+                         classes: 100% line and branch in total means 100% in every
+                         class, so per-package rules added nothing. The remaining root package (main and
                          ApplicationConfiguration) is only reported. The persistence adapter is reached only
                          by the Failsafe ITs, so the gate also proves the Kover agent instruments are Failsafe. -->
                     <rules>
@@ -217,6 +217,8 @@
                             <filters>
                                 <includes>
                                     <classes>org.ikigaidigital.timedeposit.*</classes>
+                                    <classes>org.ikigaidigital.TimeDeposit</classes>
+                                    <classes>org.ikigaidigital.TimeDepositCalculator</classes>
                                 </includes>
                             </filters>
                             <bounds>

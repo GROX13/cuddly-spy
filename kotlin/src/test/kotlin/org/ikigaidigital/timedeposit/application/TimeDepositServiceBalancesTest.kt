@@ -1,7 +1,7 @@
 package org.ikigaidigital.timedeposit.application
 
 import org.assertj.core.api.Assertions.assertThat
-import org.ikigaidigital.timedeposit.domain.TimeDepositCalculator
+import org.ikigaidigital.TimeDepositCalculator
 import org.ikigaidigital.timedeposit.domain.TimeDepositStatement
 import org.junit.jupiter.api.Test
 import java.math.BigDecimal
