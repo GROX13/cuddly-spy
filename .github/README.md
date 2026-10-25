@@ -27,7 +27,7 @@ Then open Swagger UI at <http://localhost:8080/swagger-ui/index.html> and try **
 ## Key decisions
 
 - **The legacy calculator is a frozen contract (ADR 0001).** Its internals now look plan types up by code. Four checks prove the results are bit-identical: characterization tests, edge cases from upstream, a differential test against a copy of the upstream code on about 220k inputs, and 100% coverage.
-- **Plan types are data (ADR 0009).** A plan is a code, an annual rate and a range of eligible days in a sealed class; a new plan is one more object.
+- **Plan types are data (ADR 0009).** A plan type is a code, an annual rate and a range of eligible days in a sealed class; a new plan type is one more object.
 - **Balances stay exact (ADR 0002).** Money is `NUMERIC(19,2)`. The calculator's `Double` is used only as its input: the stored decimal gets the calculator's change, rounded to cents.
 - **No lost months (ADR 0007).** A balance update locks the rows, calculates, saves and re-reads in one transaction, so concurrent calls run one after the other.
 - **Hexagonal in one module (ADR 0006).** Domain, application and adapters live in separate packages, and ArchUnit tests enforce the dependency rules.

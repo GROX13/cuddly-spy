@@ -65,7 +65,7 @@ Where the assignment is silent, these choices were made; each links to its reaso
 
 ## Code tour
 
-Everything is under `src/main/kotlin/org/ikigaidigital/`:
+Paths are under `src/main/kotlin/org/ikigaidigital/` unless they start with `src/`:
 
 | Where | What |
 |---|---|
@@ -82,7 +82,7 @@ The tests that guard the frozen calculator are `TimeDepositCalculatorTest` (char
 
 ## Limits
 
-Balances are `NUMERIC(19,2)`, so the largest storable balance is `99999999999999999.99`. A deposit that earns no interest keeps its balance to the cent at any size, but an earning balance close to that maximum can overflow the column: the balance update then returns 500 and rolls back every balance. That is about 10^17 in one account, which is unreasonably large in a currency like USD or EUR (ADR 0002).
+Balances are `NUMERIC(19,2)`, so the largest storable balance is `99999999999999999.99`. A deposit that earns no interest keeps its balance to the cent at any size, but an earning balance close to that maximum can overflow the column: the balance update then returns 500 and rolls back every balance. That is about 10^17 in one time deposit, which is unreasonably large in a currency like USD or EUR (ADR 0002).
 
 ## AI-assisted development
 

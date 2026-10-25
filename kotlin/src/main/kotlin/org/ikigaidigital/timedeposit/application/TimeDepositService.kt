@@ -53,9 +53,9 @@ class TimeDepositService(
      * [stored] itself when nothing changed, so a deposit that earned nothing is never rewritten (ADR 0002).
      *
      * The subtraction is exact (Sterbenz lemma): one month's interest keeps [after] within a factor of
-     * two of [before]. Below 2^46 the change is the calculator's rounded interest plus binary noise, so
-     * rounding it to cents only removes the noise (ADR 0002). `-0.0 == 0.0` on a primitive Double, so a
-     * signed zero needs no case of its own.
+     * two of [before]. While a Double still holds the cents, the change is the calculator's rounded
+     * interest plus binary noise, and rounding it to cents removes the noise; ADR 0002 gives the bounds.
+     * `-0.0 == 0.0` on a primitive Double, so a signed zero needs no case of its own.
      */
     private fun balanceAfterUpdate(stored: BigDecimal, before: Double, after: Double): BigDecimal {
         val change = after - before
