@@ -9,3 +9,9 @@ spring:
     compose:
       # Off unless the local profile turns it on, so no profile but local ever starts compose.yaml.
       enabled: false
+  jpa:
+    hibernate:
+      # Liquibase owns the schema; Hibernate only checks that the entities match it.
+      ddl-auto: validate
+    # No lazy loading during web rendering: the use cases load what they need inside their transaction.
+    open-in-view: false

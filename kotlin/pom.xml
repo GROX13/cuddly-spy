@@ -32,10 +32,10 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-webmvc</artifactId>
         </dependency>
-        <!-- DataSource for Liquibase; JPA arrives with the persistence adapter. -->
+        <!-- Spring Data JPA with Hibernate for the persistence adapter; also brings the DataSource Liquibase uses. -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-jdbc</artifactId>
+            <artifactId>spring-boot-starter-data-jpa</artifactId>
         </dependency>
         <!-- Boot 4 keeps the Liquibase auto-configuration in its own module, which this starter brings
              together with liquibase-core. -->
@@ -78,6 +78,12 @@
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
+        <!-- @DataJpaTest lives in its own module in Boot 4. -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-jpa-test</artifactId>
+            <scope>test</scope>
+        </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-testcontainers</artifactId>
@@ -117,14 +123,29 @@
                     <args>
                         <arg>-Xjsr305=strict</arg>
                     </args>
+                    <!-- spring: all-open for Spring annotations. jpa: no-arg constructors for JPA entities
+                         and, since Kotlin 2.3.20, all-open with the JPA preset (Entity, Embeddable,
+                         MappedSuperclass), so lazy associations can be proxied. The explicit options
+                         below repeat that preset so the build does not depend on it. -->
                     <compilerPlugins>
                         <plugin>spring</plugin>
+                        <plugin>jpa</plugin>
                     </compilerPlugins>
+                    <pluginOptions>
+                        <option>all-open:annotation=jakarta.persistence.Entity</option>
+                        <option>all-open:annotation=jakarta.persistence.MappedSuperclass</option>
+                        <option>all-open:annotation=jakarta.persistence.Embeddable</option>
+                    </pluginOptions>
                 </configuration>
                 <dependencies>
                     <dependency>
                         <groupId>org.jetbrains.kotlin</groupId>
                         <artifactId>kotlin-maven-allopen</artifactId>
+                        <version>${kotlin.version}</version>
+                    </dependency>
+                    <dependency>
+                        <groupId>org.jetbrains.kotlin</groupId>
+                        <artifactId>kotlin-maven-noarg</artifactId>
                         <version>${kotlin.version}</version>
                     </dependency>
                 </dependencies>
@@ -204,6 +225,27 @@
                             <filters>
                                 <includes>
                                     <classes>org.ikigaidigital.timedeposit.domain.*</classes>
+                                </includes>
+                            </filters>
+                            <bounds>
+                                <bound>
+                                    <coverageUnits>LINE</coverageUnits>
+                                    <minValue>100</minValue>
+                                </bound>
+                                <bound>
+                                    <coverageUnits>BRANCH</coverageUnits>
+                                    <minValue>100</minValue>
+                                </bound>
+                            </bounds>
+                        </rule>
+                        <!-- Reached only by the Failsafe ITs (TimeDepositRepositoryIT), so it also proves
+                             the Kover agent instruments Failsafe. -->
+                        <rule>
+                            <name>Persistence adapter covered</name>
+                            <groupBy>PACKAGE</groupBy>
+                            <filters>
+                                <includes>
+                                    <classes>org.ikigaidigital.timedeposit.adapter.persistence.*</classes>
                                 </includes>
                             </filters>
                             <bounds>

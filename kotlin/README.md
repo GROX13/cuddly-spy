@@ -18,7 +18,7 @@ mvn -f kotlin/pom.xml verify
 
 This runs the unit tests (Surefire), the `*IT` integration tests against a real Postgres (Failsafe and Testcontainers) and the Kover coverage gate. The coverage report is at `kotlin/target/site/kover/html/index.html`.
 
-When Docker isn't running, the integration tests are reported as skipped and the build still passes.
+Docker must be running. Without it the integration tests are skipped, and the build then fails on the persistence adapter's coverage gate, which only those tests reach. That also means the pre-commit hook rejects Kotlin changes while Docker is down.
 
 ## Running the API / Swagger
 
@@ -28,7 +28,7 @@ Docker must be running. From the repo root:
 mvn -f kotlin/pom.xml spring-boot:run -Dspring-boot.run.profiles=local
 ```
 
-The `local` profile starts Postgres from `kotlin/compose.yaml`, applies the Liquibase changelogs and seeds one time deposit per plan type. Stopping the app stops the container. Other profiles leave the tables empty and don't start compose.
+The `local` profile starts Postgres from `kotlin/compose.yaml`, applies the Liquibase changelogs and seeds six time deposits (an earning and a non-earning one per plan type) plus three withdrawals. Stopping the app stops the container. Other profiles leave the tables empty and don't start compose.
 
 - Swagger UI: http://localhost:8080/swagger-ui/index.html
 - OpenAPI document: http://localhost:8080/v3/api-docs
