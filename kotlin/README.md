@@ -33,6 +33,16 @@ The `local` profile starts Postgres from `kotlin/compose.yaml`, applies the Liqu
 - Swagger UI: http://localhost:8080/swagger-ui/index.html
 - OpenAPI document: http://localhost:8080/v3/api-docs
 
+### List time deposits
+
+`GET http://localhost:8080/time-deposits` returns every time deposit by id, each with its withdrawals by date:
+
+```sh
+curl -s localhost:8080/time-deposits
+```
+
+Money comes as two-decimal JSON numbers (`"balance":1500.00`), dates as ISO-8601 (`"date":"2026-03-15"`), and `withdrawals` is `[]` when there are none. You can also try it in Swagger UI under **Time deposits**.
+
 ## AI-assisted development
 
 See [`docs/ai-harness.md`](../docs/ai-harness.md).
