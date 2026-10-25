@@ -211,7 +211,7 @@
                             <groupBy>CLASS</groupBy>
                             <filters>
                                 <includes>
-                                    <classes>org.ikigaidigital.TimeDepositCalculator</classes>
+                                    <classes>org.ikigaidigital.timedeposit.domain.TimeDepositCalculator</classes>
                                 </includes>
                             </filters>
                             <bounds>

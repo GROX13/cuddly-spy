@@ -4,7 +4,7 @@ import jakarta.persistence.EntityManagerFactory
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatExceptionOfType
 import org.ikigaidigital.TestcontainersConfiguration
-import org.ikigaidigital.TimeDeposit
+import org.ikigaidigital.timedeposit.domain.TimeDeposit
 import org.ikigaidigital.timedeposit.application.TimeDepositRepository
 import org.ikigaidigital.timedeposit.domain.TimeDepositWithWithdrawals
 import org.ikigaidigital.timedeposit.domain.Withdrawal

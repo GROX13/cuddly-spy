@@ -1,7 +1,5 @@
-package org.ikigaidigital
+package org.ikigaidigital.timedeposit.domain
 
-import org.ikigaidigital.timedeposit.domain.PlanType
-import org.ikigaidigital.timedeposit.domain.planTypes
 import java.math.BigDecimal
 import java.math.RoundingMode
 

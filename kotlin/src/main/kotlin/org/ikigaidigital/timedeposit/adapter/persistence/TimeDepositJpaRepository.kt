@@ -1,7 +1,7 @@
 package org.ikigaidigital.timedeposit.adapter.persistence
 
 import jakarta.persistence.LockModeType
-import org.ikigaidigital.TimeDeposit
+import org.ikigaidigital.timedeposit.domain.TimeDeposit
 import org.ikigaidigital.timedeposit.application.TimeDepositRepository
 import org.ikigaidigital.timedeposit.domain.TimeDepositWithWithdrawals
 import org.ikigaidigital.timedeposit.domain.Withdrawal

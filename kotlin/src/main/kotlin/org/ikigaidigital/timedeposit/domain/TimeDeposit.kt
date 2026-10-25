@@ -1,4 +1,4 @@
-package org.ikigaidigital
+package org.ikigaidigital.timedeposit.domain
 
 data class TimeDeposit(
     val id: Int,

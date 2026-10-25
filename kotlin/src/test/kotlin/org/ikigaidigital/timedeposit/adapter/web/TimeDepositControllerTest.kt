@@ -1,7 +1,7 @@
 package org.ikigaidigital.timedeposit.adapter.web
 
 import org.assertj.core.api.Assertions.assertThat
-import org.ikigaidigital.TimeDeposit
+import org.ikigaidigital.timedeposit.domain.TimeDeposit
 import org.ikigaidigital.UseCaseConfiguration
 import org.ikigaidigital.timedeposit.application.FakeTransactions
 import org.ikigaidigital.timedeposit.application.InMemoryTimeDepositRepository

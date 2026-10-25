@@ -1,7 +1,6 @@
 package org.ikigaidigital.timedeposit.domain
 
 import org.assertj.core.api.Assertions.assertThat
-import org.ikigaidigital.TimeDeposit
 import org.junit.jupiter.api.Test
 import java.math.BigDecimal
 import java.time.LocalDate

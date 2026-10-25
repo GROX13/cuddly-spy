@@ -1,8 +1,8 @@
 package org.ikigaidigital.timedeposit.application
 
 import org.assertj.core.api.Assertions.assertThat
-import org.ikigaidigital.TimeDeposit
-import org.ikigaidigital.TimeDepositCalculator
+import org.ikigaidigital.timedeposit.domain.TimeDeposit
+import org.ikigaidigital.timedeposit.domain.TimeDepositCalculator
 import org.ikigaidigital.timedeposit.domain.TimeDepositWithWithdrawals
 import org.ikigaidigital.timedeposit.domain.Withdrawal
 import org.junit.jupiter.api.Test

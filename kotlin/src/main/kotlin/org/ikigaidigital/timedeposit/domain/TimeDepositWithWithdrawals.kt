@@ -1,6 +1,5 @@
 package org.ikigaidigital.timedeposit.domain
 
-import org.ikigaidigital.TimeDeposit
 
 /**
  * Read model: a time deposit together with its withdrawals, oldest first. [TimeDeposit] is the frozen

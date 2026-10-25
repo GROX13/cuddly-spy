@@ -1,6 +1,6 @@
 package org.ikigaidigital.timedeposit.application
 
-import org.ikigaidigital.TimeDepositCalculator
+import org.ikigaidigital.timedeposit.domain.TimeDepositCalculator
 import org.ikigaidigital.timedeposit.domain.TimeDepositWithWithdrawals
 
 /**

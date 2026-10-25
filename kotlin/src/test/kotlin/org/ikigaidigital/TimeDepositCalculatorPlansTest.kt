@@ -2,6 +2,8 @@ package org.ikigaidigital
 
 import org.assertj.core.api.Assertions.assertThat
 import org.ikigaidigital.timedeposit.domain.PlanType
+import org.ikigaidigital.timedeposit.domain.TimeDeposit
+import org.ikigaidigital.timedeposit.domain.TimeDepositCalculator
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource

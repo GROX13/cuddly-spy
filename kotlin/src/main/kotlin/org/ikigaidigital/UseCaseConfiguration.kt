@@ -4,6 +4,7 @@ import org.ikigaidigital.timedeposit.application.ListTimeDeposits
 import org.ikigaidigital.timedeposit.application.TimeDepositRepository
 import org.ikigaidigital.timedeposit.application.Transactions
 import org.ikigaidigital.timedeposit.application.UpdateAllBalances
+import org.ikigaidigital.timedeposit.domain.TimeDepositCalculator
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 

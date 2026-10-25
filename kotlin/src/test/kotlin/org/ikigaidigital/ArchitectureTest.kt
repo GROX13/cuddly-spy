@@ -4,6 +4,8 @@ import com.tngtech.archunit.core.domain.JavaClasses
 import com.tngtech.archunit.core.importer.ClassFileImporter
 import com.tngtech.archunit.core.importer.ImportOption
 import com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses
+import org.ikigaidigital.timedeposit.domain.TimeDeposit
+import org.ikigaidigital.timedeposit.domain.TimeDepositCalculator
 import org.junit.jupiter.api.Test
 
 /**
