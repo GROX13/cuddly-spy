@@ -24,7 +24,7 @@ class UpdateAllBalancesTest {
         ),
         events,
     )
-    private val updateAllBalances = UpdateAllBalances(repository, TimeDepositCalculator(), FakeTransactions(events))
+    private val updateAllBalances = UpdateAllBalances(repository, TimeDepositCalculator())
 
     @Test
     fun `should save one month of interest on every time deposit`() {
@@ -45,16 +45,15 @@ class UpdateAllBalancesTest {
     }
 
     @Test
-    fun `should lock, calculate, save and re-read inside one transaction`() {
+    fun `should lock, calculate, save and re-read in that order`() {
         updateAllBalances.execute()
 
         // The saved balances already carry the interest, so the calculator ran between load and save.
+        // The transaction around these calls is checked against real Postgres in UpdateAllBalancesTransactionIT.
         assertThat(events).containsExactly(
-            "begin",
             "loadAllForUpdate",
             "saveBalances[1000.83, 2500.0]",
             "loadAllWithWithdrawals",
-            "commit",
         )
     }
 
@@ -63,6 +62,6 @@ class UpdateAllBalancesTest {
         repository.deposits = emptyList()
 
         assertThat(updateAllBalances.execute()).isEmpty()
-        assertThat(events).containsExactly("begin", "loadAllForUpdate", "saveBalances[]", "loadAllWithWithdrawals", "commit")
+        assertThat(events).containsExactly("loadAllForUpdate", "saveBalances[]", "loadAllWithWithdrawals")
     }
 }

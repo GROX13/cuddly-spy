@@ -2,15 +2,15 @@ package org.ikigaidigital
 
 import org.ikigaidigital.timedeposit.application.ListTimeDeposits
 import org.ikigaidigital.timedeposit.application.TimeDepositRepository
-import org.ikigaidigital.timedeposit.application.Transactions
 import org.ikigaidigital.timedeposit.application.UpdateAllBalances
 import org.ikigaidigital.timedeposit.domain.TimeDepositCalculator
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 
 /**
- * Composition root for the use cases: they are plain Spring-free classes, created here from the
- * ports Spring provides (ADR 0011).
+ * Composition root for the use cases: they are plain classes, created here from the ports Spring
+ * provides (ADR 0011). The only Spring they carry is `@Transactional` (ADR 0014); Spring still
+ * applies it to beans created here.
  */
 @Configuration(proxyBeanMethods = false)
 class UseCaseConfiguration {
@@ -23,9 +23,6 @@ class UseCaseConfiguration {
     fun timeDepositCalculator() = TimeDepositCalculator()
 
     @Bean
-    fun updateAllBalances(
-        repository: TimeDepositRepository,
-        calculator: TimeDepositCalculator,
-        transactions: Transactions,
-    ) = UpdateAllBalances(repository, calculator, transactions)
+    fun updateAllBalances(repository: TimeDepositRepository, calculator: TimeDepositCalculator) =
+        UpdateAllBalances(repository, calculator)
 }

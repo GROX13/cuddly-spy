@@ -1,5 +1,7 @@
 # The use case owns its transaction through a Transactions port
 
+Superseded by [ADR 0014](0014-transactional-on-the-balance-update-use-case.md): `UpdateAllBalances` now uses `@Transactional`, and the `Transactions` port and its adapter are gone.
+
 Updating balances must lock the rows, run the frozen calculator, save the balances and re-read the list in one transaction: `loadAllForUpdate` holds its `FOR NO KEY UPDATE` row lock only until the transaction ends (ADR 0010), and the response must show exactly the state this call produced. The core is Spring-free (ADR 0011), so `UpdateAllBalances` can't carry `@Transactional`. It states the boundary itself through an outbound port in `timedeposit.application`, `Transactions.inTransaction(block)`, a plain interface. `TransactionTemplateTransactions` in `adapter.persistence` implements it with Spring's `TransactionTemplate`: one read-write `REQUIRED` transaction that commits when the block returns and rolls back on an unchecked exception. The repository's declared queries and default methods have no transaction attributes of their own, so they join it, and the dirty balances flush at commit.
 
 ## Considered options

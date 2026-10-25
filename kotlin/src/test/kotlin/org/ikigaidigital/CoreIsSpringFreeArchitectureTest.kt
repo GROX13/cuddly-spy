@@ -3,12 +3,14 @@ package org.ikigaidigital
 import com.tngtech.archunit.core.domain.JavaClasses
 import com.tngtech.archunit.core.importer.ClassFileImporter
 import com.tngtech.archunit.core.importer.ImportOption
+import com.tngtech.archunit.core.domain.JavaClass.Predicates.resideInAPackage
 import com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses
 import org.junit.jupiter.api.Test
 
 /**
  * The core (domain and application) is plain Kotlin: use cases are created in
- * [UseCaseConfiguration], never annotated as Spring beans (ADR 0011). The domain rule overlaps
+ * [UseCaseConfiguration], never annotated as Spring beans (ADR 0011). The one exception is the
+ * application layer's transaction boundary, `@Transactional` (ADR 0014). The domain rule overlaps
  * ArchitectureTest's, but states the Spring-free intent for the whole core in one place.
  */
 class CoreIsSpringFreeArchitectureTest {
@@ -18,9 +20,12 @@ class CoreIsSpringFreeArchitectureTest {
         .importPackages("org.ikigaidigital")
 
     @Test
-    fun `should keep the application layer free of Spring`() {
+    fun `should keep the application layer free of Spring except transaction annotations`() {
         noClasses().that().resideInAPackage("..timedeposit.application..")
-            .should().dependOnClassesThat().resideInAPackage("org.springframework..")
+            .should().dependOnClassesThat(
+                resideInAPackage("org.springframework..")
+                    .and(resideInAPackage("org.springframework.transaction.annotation..").negate())
+            )
             .check(classes)
     }
 

@@ -3,7 +3,6 @@ package org.ikigaidigital.timedeposit.adapter.web
 import org.assertj.core.api.Assertions.assertThat
 import org.ikigaidigital.timedeposit.domain.TimeDeposit
 import org.ikigaidigital.UseCaseConfiguration
-import org.ikigaidigital.timedeposit.application.FakeTransactions
 import org.ikigaidigital.timedeposit.application.InMemoryTimeDepositRepository
 import org.ikigaidigital.timedeposit.domain.TimeDepositWithWithdrawals
 import org.ikigaidigital.timedeposit.domain.Withdrawal
@@ -30,9 +29,6 @@ class TimeDepositControllerTest {
     class FakePorts {
         @Bean
         fun timeDepositRepository() = InMemoryTimeDepositRepository()
-
-        @Bean
-        fun transactions() = FakeTransactions()
     }
 
     @Autowired

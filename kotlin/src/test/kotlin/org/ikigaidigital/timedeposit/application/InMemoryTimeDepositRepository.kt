@@ -8,8 +8,7 @@ import java.math.RoundingMode
 /**
  * A fake port for tests: it hands back exactly the read models it holds, in that order. Loading for
  * update returns copies, so a change only reaches the stored deposits through [saveBalances], as with
- * the real adapter. Each port call is appended to [events], which a test can share with
- * [FakeTransactions] to check the order of calls.
+ * the real adapter. Each port call is appended to [events], so a test can check the order of calls.
  */
 class InMemoryTimeDepositRepository(
     var deposits: List<TimeDepositWithWithdrawals> = emptyList(),
