@@ -52,7 +52,7 @@ class SwaggerIT {
             item.propertyNames().filter { it in HTTP_METHODS }.map { "${it.uppercase()} $path" }
         }
 
-        assertThat(operations).containsExactlyInAnyOrder("GET /time-deposits")
+        assertThat(operations).containsExactlyInAnyOrder("GET /time-deposits", "POST /time-deposits/balance-updates")
     }
 
     @Test
@@ -66,6 +66,19 @@ class SwaggerIT {
         assertThat(schema.path("items").path("\$ref").asString()).isEqualTo("#/components/schemas/TimeDepositResponse")
         assertThat(api.path("components").path("schemas").path("TimeDepositResponse").path("properties").propertyNames())
             .containsExactly("id", "planType", "balance", "days", "withdrawals")
+    }
+
+    @Test
+    fun `should document the balance update with its summary, no request body and the list response`() {
+        val update = JsonMapper.builder().build().readTree(get("/v3/api-docs").body())
+            .path("paths").path("/time-deposits/balance-updates").path("post")
+        val schema = update.path("responses").path("200").path("content").path("application/json").path("schema")
+
+        assertThat(update.path("summary").asString()).isEqualTo("Apply one month of interest to every time deposit")
+        assertThat(update.has("requestBody")).isFalse
+        assertThat(update.has("parameters")).isFalse
+        assertThat(schema.path("type").asString()).isEqualTo("array")
+        assertThat(schema.path("items").path("\$ref").asString()).isEqualTo("#/components/schemas/TimeDepositResponse")
     }
 
     @Test

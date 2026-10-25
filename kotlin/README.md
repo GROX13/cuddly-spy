@@ -43,6 +43,16 @@ curl -s localhost:8080/time-deposits
 
 Money comes as two-decimal JSON numbers (`"balance":1500.00`), dates as ISO-8601 (`"date":"2026-03-15"`), and `withdrawals` is `[]` when there are none. You can also try it in Swagger UI under **Time deposits**.
 
+### Update balances
+
+`POST http://localhost:8080/time-deposits/balance-updates`, with no request body, adds one month of interest to every time deposit and returns all of them in the same shape as the list:
+
+```sh
+curl -s -X POST localhost:8080/time-deposits/balance-updates
+```
+
+**Every call adds another month.** There is no once-per-month guard, so calling it twice pays interest twice (ADR 0008). With the local seed, the first call takes basic 1500.00 to 1501.25, student 2000.00 to 2005.00 and premium 6000.00 to 6025.00; the other three earn nothing. Concurrent calls run one after another, so none is lost (ADR 0012). Restart with fresh balances with `docker compose -f kotlin/compose.yaml down -v`.
+
 ## AI-assisted development
 
 See [`docs/ai-harness.md`](../docs/ai-harness.md).

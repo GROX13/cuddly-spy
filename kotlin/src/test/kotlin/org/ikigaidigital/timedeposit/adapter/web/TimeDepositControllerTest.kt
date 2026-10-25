@@ -3,6 +3,7 @@ package org.ikigaidigital.timedeposit.adapter.web
 import org.assertj.core.api.Assertions.assertThat
 import org.ikigaidigital.TimeDeposit
 import org.ikigaidigital.UseCaseConfiguration
+import org.ikigaidigital.timedeposit.application.FakeTransactions
 import org.ikigaidigital.timedeposit.application.InMemoryTimeDepositRepository
 import org.ikigaidigital.timedeposit.domain.TimeDepositWithWithdrawals
 import org.ikigaidigital.timedeposit.domain.Withdrawal
@@ -18,17 +19,20 @@ import java.math.BigDecimal
 import java.time.LocalDate
 
 /**
- * The web slice with the real use case and its real wiring (`UseCaseConfiguration`) over an in-memory
- * port, so nothing is mocked. Bodies are compared as raw text to pin the number and date formats.
+ * The web slice with the real use cases and their real wiring (`UseCaseConfiguration`) over an
+ * in-memory port and a fake transaction boundary, so nothing is mocked. Bodies are compared as raw text to pin the number and date formats.
  */
 @WebMvcTest(TimeDepositController::class)
-@Import(UseCaseConfiguration::class, TimeDepositControllerTest.FakeRepository::class)
+@Import(UseCaseConfiguration::class, TimeDepositControllerTest.FakePorts::class)
 class TimeDepositControllerTest {
 
     @TestConfiguration(proxyBeanMethods = false)
-    class FakeRepository {
+    class FakePorts {
         @Bean
         fun timeDepositRepository() = InMemoryTimeDepositRepository()
+
+        @Bean
+        fun transactions() = FakeTransactions()
     }
 
     @Autowired
@@ -87,5 +91,29 @@ class TimeDepositControllerTest {
         repository.deposits = emptyList()
 
         assertThat(mvc.get().uri("/time-deposits")).hasStatusOk().bodyText().isEqualTo("[]")
+    }
+
+    /**
+     * One month by the legacy rules (checked in jshell): basic 1000.00 at 400 days earns
+     * 1000 * 0.01 / 12 = 0.8333… -> 0.83; premium at 40 days is before its eligible days.
+     */
+    @Test
+    fun `should add one month of interest on a POST with no body and return every time deposit`() {
+        repository.deposits = listOf(
+            TimeDepositWithWithdrawals(
+                TimeDeposit(1, "basic", 1000.0, 400),
+                listOf(Withdrawal(11, BigDecimal("100.00"), LocalDate.of(2026, 3, 15))),
+            ),
+            TimeDepositWithWithdrawals(TimeDeposit(2, "premium", 5000.0, 40), emptyList()),
+        )
+
+        assertThat(mvc.post().uri("/time-deposits/balance-updates"))
+            .hasStatusOk()
+            .hasContentType(MediaType.APPLICATION_JSON)
+            .bodyText().isEqualTo(
+                """[{"id":1,"planType":"basic","balance":1000.83,"days":400,"withdrawals":[""" +
+                    """{"id":11,"amount":100.00,"date":"2026-03-15"}]},""" +
+                    """{"id":2,"planType":"premium","balance":5000.00,"days":40,"withdrawals":[]}]"""
+            )
     }
 }
