@@ -207,91 +207,17 @@
                     </execution>
                 </executions>
                 <configuration>
+                    <!-- One gate for all of org.ikigaidigital.timedeposit (domain with the legacy calculator,
+                         application, both adapters): 100% line and branch in total means 100% in every
+                         class, so per-package rules added nothing. The root package (main and
+                         ApplicationConfiguration) is only reported. The persistence adapter is reached only
+                         by the Failsafe ITs, so the gate also proves the Kover agent instruments Failsafe. -->
                     <rules>
                         <rule>
-                            <name>Legacy calculator fully covered</name>
-                            <groupBy>CLASS</groupBy>
+                            <name>Time deposit code fully covered</name>
                             <filters>
                                 <includes>
-                                    <classes>org.ikigaidigital.timedeposit.domain.TimeDepositCalculator</classes>
-                                </includes>
-                            </filters>
-                            <bounds>
-                                <bound>
-                                    <coverageUnits>LINE</coverageUnits>
-                                    <minValue>100</minValue>
-                                </bound>
-                                <bound>
-                                    <coverageUnits>BRANCH</coverageUnits>
-                                    <minValue>100</minValue>
-                                </bound>
-                            </bounds>
-                        </rule>
-                        <rule>
-                            <name>Domain covered</name>
-                            <groupBy>PACKAGE</groupBy>
-                            <filters>
-                                <includes>
-                                    <classes>org.ikigaidigital.timedeposit.domain.*</classes>
-                                </includes>
-                            </filters>
-                            <bounds>
-                                <bound>
-                                    <coverageUnits>LINE</coverageUnits>
-                                    <minValue>100</minValue>
-                                </bound>
-                                <bound>
-                                    <coverageUnits>BRANCH</coverageUnits>
-                                    <minValue>100</minValue>
-                                </bound>
-                            </bounds>
-                        </rule>
-                        <!-- Reached only by the Failsafe ITs (TimeDepositRepositoryIT), so it also proves
-                             the Kover agent instruments Failsafe. -->
-                        <rule>
-                            <name>Persistence adapter covered</name>
-                            <groupBy>PACKAGE</groupBy>
-                            <filters>
-                                <includes>
-                                    <classes>org.ikigaidigital.timedeposit.adapter.persistence.*</classes>
-                                </includes>
-                            </filters>
-                            <bounds>
-                                <bound>
-                                    <coverageUnits>LINE</coverageUnits>
-                                    <minValue>100</minValue>
-                                </bound>
-                                <bound>
-                                    <coverageUnits>BRANCH</coverageUnits>
-                                    <minValue>100</minValue>
-                                </bound>
-                            </bounds>
-                        </rule>
-                        <rule>
-                            <name>Application covered</name>
-                            <groupBy>PACKAGE</groupBy>
-                            <filters>
-                                <includes>
-                                    <classes>org.ikigaidigital.timedeposit.application.*</classes>
-                                </includes>
-                            </filters>
-                            <bounds>
-                                <bound>
-                                    <coverageUnits>LINE</coverageUnits>
-                                    <minValue>100</minValue>
-                                </bound>
-                                <bound>
-                                    <coverageUnits>BRANCH</coverageUnits>
-                                    <minValue>100</minValue>
-                                </bound>
-                            </bounds>
-                        </rule>
-                        <rule>
-                            <name>Web adapter covered</name>
-                            <groupBy>PACKAGE</groupBy>
-                            <filters>
-                                <includes>
-                                    <classes>org.ikigaidigital.timedeposit.adapter.web.*</classes>
+                                    <classes>org.ikigaidigital.timedeposit.*</classes>
                                 </includes>
                             </filters>
                             <bounds>

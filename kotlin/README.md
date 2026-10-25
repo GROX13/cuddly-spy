@@ -18,7 +18,7 @@ mvn -f kotlin/pom.xml verify
 
 This runs the unit tests (Surefire), the `*IT` integration tests against a real Postgres (Failsafe and Testcontainers) and the Kover coverage gate. The coverage report is at `kotlin/target/site/kover/html/index.html`.
 
-Docker must be running. Without it the integration tests are skipped, and the build then fails on the persistence adapter's coverage gate, which only those tests reach. That also means the pre-commit hook rejects Kotlin changes while Docker is down.
+Docker must be running. Without it the integration tests are skipped, and the build then fails the coverage gate, because only those tests reach the persistence adapter. That also means the pre-commit hook rejects Kotlin changes while Docker is down.
 
 ## Running the API / Swagger
 
