@@ -1,0 +1,27 @@
+name: Harness fixtures
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".githooks/**"
+      - ".cursor/hooks/**"
+      - ".github/hooks/**"
+      - ".github/workflows/harness.yml"
+  pull_request:
+    paths:
+      - ".githooks/**"
+      - ".cursor/hooks/**"
+      - ".github/hooks/**"
+      - ".github/workflows/harness.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  fixtures:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Check shell hook decisions and staged-path protection
+        run: python3 .githooks/tests/check_guardrails.py

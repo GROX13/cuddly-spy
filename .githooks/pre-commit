@@ -2,12 +2,21 @@
 # Agent-agnostic guardrails. Enable once per clone: git config core.hooksPath .githooks
 set -e
 
-staged=$(git diff --cached --name-only)
+staged=$(git -c core.quotePath=false diff --cached --name-only --no-renames)
 
-if printf '%s\n' "$staged" | grep -qx 'README.md'; then
+if printf '%s\n' "$staged" | grep -Fqx 'README.md'; then
   echo "pre-commit: README.md holds the assignment and must stay unchanged. Unstage it: git restore --staged README.md" >&2
   exit 1
 fi
+
+for protected in \
+  kotlin/src/test/kotlin/org/ikigaidigital/TimeDepositCalculatorTest.kt \
+  kotlin/src/test/kotlin/org/ikigaidigital/ArchitectureTest.kt; do
+  if printf '%s\n' "$staged" | grep -Fqx "$protected"; then
+    echo "pre-commit: $protected is read-only for agents. Fix production code and put new tests in a new file; unstage the protected change." >&2
+    exit 1
+  fi
+done
 
 if printf '%s\n' "$staged" | grep -q '^kotlin/'; then
   echo "pre-commit: kotlin/ changed, running tests..." >&2

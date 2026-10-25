@@ -1,0 +1,48 @@
+{
+  "shell": [
+    {"command": "git status --short", "decision": "allow"},
+    {"command": "git commit -m ordinary", "decision": "allow"},
+    {"command": "git commit -am ordinary", "decision": "allow"},
+    {"command": "git commit --no-verify -m x", "decision": "deny"},
+    {"command": "git commit -n -m x", "decision": "deny"},
+    {"command": "git commit -anm x", "decision": "deny"},
+    {"command": "git commit -m x --no-verify", "decision": "deny"},
+    {"command": "git -c core.hooksPath=/dev/null commit -m x", "decision": "deny"},
+    {"command": "git config core.hooksPath /dev/null", "decision": "deny"},
+    {"command": "git config --get core.hooksPath", "decision": "allow"},
+    {"command": "git push", "decision": "ask"},
+    {"command": "git push --force", "decision": "deny"},
+    {"command": "git push -f", "decision": "deny"},
+    {"command": "git reset --hard", "decision": "deny"},
+    {"command": "git clean -fd", "decision": "deny"},
+    {"command": "git status && git push -f", "decision": "deny"}
+  ],
+  "edits": [
+    {"path": "README.md", "decision": "deny"},
+    {"path": "./README.md", "decision": "deny"},
+    {"path": "{root}/README.md", "decision": "deny"},
+    {"path": "kotlin/src/test/kotlin/org/ikigaidigital/TimeDepositCalculatorTest.kt", "decision": "deny"},
+    {"path": "{root}/kotlin/src/test/kotlin/org/ikigaidigital/ArchitectureTest.kt", "decision": "deny"},
+    {"path": "kotlin/src/test/kotlin/org/ikigaidigital/NewTest.kt", "decision": "allow"},
+    {"path": "kotlin/README.md", "decision": "allow"},
+    {"path": "docs/example.md", "decision": "allow"}
+  ],
+  "copilot": [
+    {
+      "payload": {"tool_name": "read_file", "tool_input": {"file_path": "README.md"}},
+      "decision": "allow"
+    },
+    {
+      "payload": {"tool_name": "delete_file", "tool_input": {"file_path": "kotlin/src/test/kotlin/org/ikigaidigital/ArchitectureTest.kt"}},
+      "decision": "deny"
+    },
+    {
+      "payload": {"tool_name": "apply_patch", "tool_input": {"patch": "*** Begin Patch\n*** Update File: kotlin/src/test/kotlin/org/ikigaidigital/TimeDepositCalculatorTest.kt\n@@\n-synthetic\n+synthetic\n*** End Patch"}},
+      "decision": "deny"
+    },
+    {
+      "payload": {"toolName": "run_in_terminal", "toolArgs": "{\"command\":\"git push -f\"}"},
+      "decision": "deny"
+    }
+  ]
+}
