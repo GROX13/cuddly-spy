@@ -45,7 +45,7 @@ class ApplicationIT {
 
     /**
      * The full application puts the `@Repository` adapter behind Spring's exception translation
-     * (ADR 0017); `TimeDepositRepositoryIT` imports the same auto-configuration into its slice.
+     * (ADR 0006); `TimeDepositRepositoryIT` imports the same auto-configuration into its slice.
      */
     @Test
     fun `should translate the persistence adapter's exceptions`() {

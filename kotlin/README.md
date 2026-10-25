@@ -51,11 +51,11 @@ Money comes as two-decimal JSON numbers (`"balance":1500.00`), dates as ISO-8601
 curl -s -X POST localhost:8080/time-deposits/balance-updates
 ```
 
-**Every call adds another month.** There is no once-per-month guard, so calling it twice pays interest twice (ADR 0008). With the local seed, the first call takes basic 1500.00 to 1501.25, student 2000.00 to 2005.00 and premium 6000.00 to 6025.00; the other three earn nothing. Concurrent calls run one after another, so none is lost: each call locks the rows in its own transaction (ADR 0014, ADR 0016). Restart with fresh balances with `docker compose -f kotlin/compose.yaml down -v`.
+**Every call adds another month.** There is no once-per-month guard, so calling it twice pays interest twice (ADR 0008). With the local seed, the first call takes basic 1500.00 to 1501.25, student 2000.00 to 2005.00 and premium 6000.00 to 6025.00; the other three earn nothing. Concurrent calls run one after another, so none is lost: each call locks the rows in its own transaction (ADR 0007). Restart with fresh balances with `docker compose -f kotlin/compose.yaml down -v`.
 
 ## Limits
 
-Balances are `NUMERIC(19,2)`, so the largest storable balance is `99999999999999999.99`. A deposit that earns no interest keeps its balance to the cent at any size, but an earning balance close to that maximum can overflow the column: the balance update then returns 500 and rolls back every balance. That is about 10^17 in one account, which is unreasonably large in a currency like USD or EUR (ADR 0015).
+Balances are `NUMERIC(19,2)`, so the largest storable balance is `99999999999999999.99`. A deposit that earns no interest keeps its balance to the cent at any size, but an earning balance close to that maximum can overflow the column: the balance update then returns 500 and rolls back every balance. That is about 10^17 in one account, which is unreasonably large in a currency like USD or EUR (ADR 0002).
 
 ## AI-assisted development
 

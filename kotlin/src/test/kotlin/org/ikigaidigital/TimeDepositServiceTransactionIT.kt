@@ -21,7 +21,7 @@ import org.testcontainers.junit.jupiter.Testcontainers
 import java.math.BigDecimal
 
 /**
- * `@Transactional` on [TimeDepositService] over real Postgres (ADR 0014). No test transaction wraps
+ * `@Transactional` on [TimeDepositService] over real Postgres (ADR 0007). No test transaction wraps
  * these tests, so commit and rollback are the service's own; balances are read back with JDBC.
  */
 @SpringBootTest(webEnvironment = RANDOM_PORT)

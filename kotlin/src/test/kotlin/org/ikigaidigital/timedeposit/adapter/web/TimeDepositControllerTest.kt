@@ -59,7 +59,7 @@ class TimeDepositControllerTest {
     }
 
     /**
-     * Balances are the stored NUMERIC(19,2) decimals and leave exactly as stored (ADR 0015): cents a
+     * Balances are the stored NUMERIC(19,2) decimals and leave exactly as stored (ADR 0002): cents a
      * Double can't hold (90071992547409.91 would read back as ...409.90625), the column's maximum, and
      * no exponent notation for 10000000.00.
      */

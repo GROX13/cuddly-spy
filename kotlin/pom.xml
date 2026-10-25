@@ -32,7 +32,7 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-webmvc</artifactId>
         </dependency>
-        <!-- Spring Data implements the entity repository behind the mapping adapter (ADR 0017).
+        <!-- Spring Data implements the entity repository behind the mapping adapter (ADR 0006).
              Also brings Hibernate and the DataSource Liquibase uses. -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

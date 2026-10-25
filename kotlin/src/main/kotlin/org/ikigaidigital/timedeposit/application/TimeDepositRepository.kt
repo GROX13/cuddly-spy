@@ -5,7 +5,7 @@ import java.math.BigDecimal
 
 /**
  * Outbound port: what the use cases need from storage. Plain Kotlin; adapter.persistence implements
- * it (ADR 0016).
+ * it (ADR 0006).
  */
 interface TimeDepositRepository {
 

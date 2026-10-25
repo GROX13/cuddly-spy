@@ -33,7 +33,7 @@ data class TimeDepositResponse(
 
 /**
  * The balance is the stored NUMERIC(19,2), so it already has two decimals and is sent as is; it
- * never passes through the frozen `TimeDeposit`'s Double (ADR 0002, ADR 0015).
+ * never passes through the frozen `TimeDeposit`'s Double (ADR 0002).
  */
 internal fun TimeDepositStatement.toResponse() = TimeDepositResponse(
     id = id,

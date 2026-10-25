@@ -91,7 +91,7 @@ class TimeDepositRepositoryIT {
 
     @Test
     fun `should serve the port from the mapping adapter behind an exception-translation proxy`() {
-        // `@Repository` (ADR 0017): Spring wraps the one hand-written adapter in a proxy that
+        // `@Repository` (ADR 0006): Spring wraps the one hand-written adapter in a proxy that
         // translates its exceptions into DataAccessExceptions.
         assertThat(AopUtils.isAopProxy(repository)).isTrue
         assertThat(AopUtils.getTargetClass(repository)).isEqualTo(JpaTimeDepositAdapter::class.java)

@@ -8,7 +8,7 @@ import org.springframework.stereotype.Repository
 import java.math.BigDecimal
 
 /**
- * Maps Spring Data's entities to the application's values (ADR 0017). `@Repository` also translates
+ * Maps Spring Data's entities to the application's values (ADR 0006). `@Repository` also translates
  * caller errors into Spring's `DataAccessException`. The application owns the transaction spanning
  * loading, calculation and saving; Spring Data supplies the database operations.
  */
@@ -17,7 +17,7 @@ class JpaTimeDepositAdapter(private val repository: SpringDataTimeDepositReposit
 
     /**
      * One query: Hibernate keeps one root per deposit, and `@OrderBy` sorts the fetched withdrawals.
-     * The stored NUMERIC(19,2) balance goes out as is; it never passes through a Double (ADR 0015).
+     * The stored NUMERIC(19,2) balance goes out as is; it never passes through a Double (ADR 0002).
      */
     override fun loadAllWithWithdrawals(): List<TimeDepositStatement> =
         repository.findAllWithWithdrawals()
@@ -34,7 +34,7 @@ class JpaTimeDepositAdapter(private val repository: SpringDataTimeDepositReposit
     /**
      * `select … for no key update` (Hibernate 7.4's PESSIMISTIC_WRITE on PostgreSQL): a concurrent
      * balance update waits until this transaction ends, so no monthly run reads a balance another run
-     * is about to overwrite (ADR 0008, ADR 0017).
+     * is about to overwrite (ADR 0007).
      */
     override fun loadAllForUpdate(): List<TimeDepositSnapshot> =
         repository.findAllForUpdate()

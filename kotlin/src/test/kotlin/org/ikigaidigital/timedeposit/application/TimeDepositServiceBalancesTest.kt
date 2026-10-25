@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Test
 import java.math.BigDecimal
 
 /**
- * Literal results pin ADR 0015's rounding cases. TimeDepositServiceUpstreamBalancesTest covers the
+ * Literal results pin ADR 0002's rounding cases. TimeDepositServiceUpstreamBalancesTest covers the
  * range between them against the upstream calculator.
  */
 class TimeDepositServiceBalancesTest {

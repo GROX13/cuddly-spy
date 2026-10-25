@@ -13,7 +13,7 @@ import org.ikigaidigital.upstream.TimeDepositCalculator as UpstreamTimeDepositCa
 /**
  * The stored balance after one update is the upstream calculator's result rounded to cents, for every
  * balance below 2^45 (about 35 trillion), where a Double still holds each cent. Larger balances are a
- * documented limit (ADR 0015) and are not pinned.
+ * documented limit (ADR 0002) and are not pinned.
  */
 class TimeDepositServiceUpstreamBalancesTest {
 

@@ -7,8 +7,8 @@ import org.springframework.context.annotation.Configuration
 
 /**
  * Composition root for the core: the service and the calculator are plain classes, created here from
- * the port Spring provides (ADR 0011, ADR 0016). The only Spring they carry is `@Transactional`
- * (ADR 0014); Spring still applies it to beans created here.
+ * the port Spring provides (ADR 0006). The only Spring they carry is `@Transactional`
+ * (ADR 0007); Spring still applies it to beans created here.
  */
 @Configuration(proxyBeanMethods = false)
 class ApplicationConfiguration {

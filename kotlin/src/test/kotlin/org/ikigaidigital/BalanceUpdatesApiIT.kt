@@ -150,7 +150,7 @@ class BalanceUpdatesApiIT {
 
     /**
      * Basic at day 0 earns nothing. The Double the calculator gets, 90071992547409.90625, can't hold
-     * the cents (ulp 1/64), yet the stored decimal must come back and stay exactly as it was (ADR 0015).
+     * the cents (ulp 1/64), yet the stored decimal must come back and stay exactly as it was (ADR 0002).
      */
     @Test
     fun `should keep cents a Double can't hold on a time deposit that earns nothing`() {
@@ -180,7 +180,7 @@ class BalanceUpdatesApiIT {
     }
 
     /**
-     * The documented limit (ADR 0015): a balance that earns past NUMERIC(19,2)'s maximum overflows the
+     * The documented limit (ADR 0002): a balance that earns past NUMERIC(19,2)'s maximum overflows the
      * column, and the whole batch fails and rolls back, the normal deposit next to it included.
      */
     @Test
