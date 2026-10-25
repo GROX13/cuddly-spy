@@ -13,3 +13,5 @@ Use cases are plain Kotlin classes in `timedeposit.application`, with no Spring 
 - Use cases are unit-tested with plain constructors and an in-memory port; no Spring context is needed.
 
 Amended by [ADR 0014](0014-transactional-on-the-balance-update-use-case.md): `UpdateAllBalances` carries `@Transactional`, the one Spring annotation allowed in the application layer.
+
+Amended by [ADR 0016](0016-one-port-implemented-by-a-jpa-class.md): the use cases are merged into one plain class, `TimeDepositService`, and the composition root is renamed `ApplicationConfiguration`.

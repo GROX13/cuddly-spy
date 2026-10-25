@@ -3,7 +3,7 @@ package org.ikigaidigital
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatIllegalStateException
 import org.ikigaidigital.timedeposit.application.TimeDepositRepository
-import org.ikigaidigital.timedeposit.application.UpdateAllBalances
+import org.ikigaidigital.timedeposit.application.TimeDepositService
 import org.ikigaidigital.timedeposit.domain.TimeDepositCalculator
 import org.ikigaidigital.timedeposit.domain.TimeDepositStatement
 import org.junit.jupiter.api.AfterEach
@@ -22,13 +22,13 @@ import org.testcontainers.junit.jupiter.Testcontainers
 import java.math.BigDecimal
 
 /**
- * `@Transactional` on [UpdateAllBalances] over real Postgres (ADR 0014). No test transaction wraps
- * these tests, so commit and rollback are the use case's own; balances are read back with JDBC.
+ * `@Transactional` on [TimeDepositService] over real Postgres (ADR 0014). No test transaction wraps
+ * these tests, so commit and rollback are the service's own; balances are read back with JDBC.
  */
 @SpringBootTest(webEnvironment = RANDOM_PORT)
 @Import(TestcontainersConfiguration::class)
 @Testcontainers(disabledWithoutDocker = true)
-class UpdateAllBalancesTransactionIT {
+class TimeDepositServiceTransactionIT {
 
     /** Delegates to the real repository, but fails right after the balances are saved and flushed. */
     class FailingAfterSaveRepository(private val delegate: TimeDepositRepository) : TimeDepositRepository by delegate {
@@ -39,15 +39,15 @@ class UpdateAllBalancesTransactionIT {
     }
 
     @TestConfiguration(proxyBeanMethods = false)
-    class FailingUseCase {
-        /** Not an autowire candidate, so the controller still gets the one real use case. */
+    class FailingService {
+        /** Not an autowire candidate, so the controller still gets the one real service. */
         @Bean(autowireCandidate = false)
-        fun failingUpdateAllBalances(repository: TimeDepositRepository, calculator: TimeDepositCalculator) =
-            UpdateAllBalances(FailingAfterSaveRepository(repository), calculator)
+        fun failingTimeDepositService(repository: TimeDepositRepository, calculator: TimeDepositCalculator) =
+            TimeDepositService(FailingAfterSaveRepository(repository), calculator)
     }
 
     @Autowired
-    private lateinit var updateAllBalances: UpdateAllBalances
+    private lateinit var service: TimeDepositService
 
     @Autowired
     private lateinit var context: ApplicationContext
@@ -63,17 +63,17 @@ class UpdateAllBalancesTransactionIT {
     }
 
     @Test
-    fun `should run the use case through a transactional proxy`() {
-        assertThat(AopUtils.isAopProxy(updateAllBalances)).isTrue()
+    fun `should run the service through a transactional proxy`() {
+        assertThat(AopUtils.isAopProxy(service)).isTrue()
     }
 
     @Test
     fun `should roll back every saved balance when the update fails`() {
         insertDeposit(1, "basic", 31, "1000.00")
         insertDeposit(2, "student", 31, "2000.00")
-        val failing = context.getBean("failingUpdateAllBalances", UpdateAllBalances::class.java)
+        val failing = context.getBean("failingTimeDepositService", TimeDepositService::class.java)
 
-        assertThatIllegalStateException().isThrownBy { failing.execute() }.withMessage("failed after saving")
+        assertThatIllegalStateException().isThrownBy { failing.updateAllBalances() }.withMessage("failed after saving")
 
         assertThat(storedBalances()).containsExactly(BigDecimal("1000.00"), BigDecimal("2000.00"))
     }

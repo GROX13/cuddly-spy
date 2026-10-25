@@ -1,5 +1,7 @@
 # A Spring Data repository implements the persistence port
 
+Superseded by [ADR 0016](0016-one-port-implemented-by-a-jpa-class.md): the port stays, but one `@Repository` class over JPA's `EntityManager`, `JpaTimeDepositRepository`, implements it, and the Spring Data interface is gone.
+
 Hexagonal dependencies point inward (ADR 0007), so the application layer owns a plain-Kotlin port, `TimeDepositRepository` (`loadAllWithWithdrawals`, `loadAllForUpdate`, `saveBalances`), with no JPA or Spring import. It is implemented by `TimeDepositJpaRepository`, a Spring Data `Repository<TimeDepositEntity, Int>` that also extends the port. Declared `@Query` methods do the database work: a left fetch-join for the read, and a `PESSIMISTIC_WRITE` select for the update. Kotlin default methods on the same interface map entities to the domain and write balances back as `BigDecimal.valueOf(balance).setScale(2, HALF_UP)` on the locked, managed entities. Spring Data generates the implementation and runs the default methods, so there is no hand-written adapter class. JPA entities stay separate from the domain, and the frozen `TimeDeposit` is untouched (ADR 0001).
 
 Amended by [ADR 0015](0015-exact-balances-around-the-double-calculator.md): `loadAllWithWithdrawals` maps the stored balance straight to `TimeDepositStatement`, and `saveBalances` writes `balanceAfterUpdate(stored, stored.toDouble(), balance)` instead of `BigDecimal.valueOf(balance)`, skipping deposits that did not change.

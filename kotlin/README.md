@@ -51,7 +51,7 @@ Money comes as two-decimal JSON numbers (`"balance":1500.00`), dates as ISO-8601
 curl -s -X POST localhost:8080/time-deposits/balance-updates
 ```
 
-**Every call adds another month.** There is no once-per-month guard, so calling it twice pays interest twice (ADR 0008). With the local seed, the first call takes basic 1500.00 to 1501.25, student 2000.00 to 2005.00 and premium 6000.00 to 6025.00; the other three earn nothing. Concurrent calls run one after another, so none is lost (ADR 0012). Restart with fresh balances with `docker compose -f kotlin/compose.yaml down -v`.
+**Every call adds another month.** There is no once-per-month guard, so calling it twice pays interest twice (ADR 0008). With the local seed, the first call takes basic 1500.00 to 1501.25, student 2000.00 to 2005.00 and premium 6000.00 to 6025.00; the other three earn nothing. Concurrent calls run one after another, so none is lost: each call locks the rows in its own transaction (ADR 0014, ADR 0016). Restart with fresh balances with `docker compose -f kotlin/compose.yaml down -v`.
 
 ## Limits
 

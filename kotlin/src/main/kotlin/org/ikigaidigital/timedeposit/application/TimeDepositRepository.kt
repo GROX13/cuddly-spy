@@ -5,10 +5,7 @@ import org.ikigaidigital.timedeposit.domain.TimeDepositStatement
 
 /**
  * Outbound port: what the use cases need from storage. Plain Kotlin; adapter.persistence implements
- * it (ADR 0010).
- *
- * The verbs avoid Spring Data's own names (`findAll`, `save…`): the implementing repository extends
- * both interfaces, and a clash with a different return type would not compile.
+ * it (ADR 0016).
  */
 interface TimeDepositRepository {
 

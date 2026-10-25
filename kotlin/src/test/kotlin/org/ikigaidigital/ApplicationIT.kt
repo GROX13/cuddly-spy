@@ -1,12 +1,16 @@
 package org.ikigaidigital
 
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatExceptionOfType
+import org.ikigaidigital.timedeposit.application.TimeDepositRepository
+import org.ikigaidigital.timedeposit.domain.TimeDeposit
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.getBean
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.context.ApplicationContext
 import org.springframework.context.annotation.Import
+import org.springframework.dao.InvalidDataAccessApiUsageException
 import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.jdbc.core.queryForList
 import org.springframework.jdbc.core.queryForObject
@@ -37,5 +41,16 @@ class ApplicationIT {
         assertThat(tables).contains("time_deposits", "withdrawals")
         assertThat(jdbc.queryForObject<Int>("SELECT count(*) FROM time_deposits")).isZero
         assertThat(jdbc.queryForObject<Int>("SELECT count(*) FROM withdrawals")).isZero
+    }
+
+    /**
+     * The full application puts the `@Repository` adapter behind Spring's exception translation
+     * (ADR 0016); `TimeDepositRepositoryIT` imports the same auto-configuration into its slice.
+     */
+    @Test
+    fun `should translate the persistence adapter's exceptions`() {
+        assertThatExceptionOfType(InvalidDataAccessApiUsageException::class.java)
+            .isThrownBy { context.getBean<TimeDepositRepository>().saveBalances(listOf(TimeDeposit(42, "basic", 1.0, 31))) }
+            .withMessage("No time deposit with id 42")
     }
 }

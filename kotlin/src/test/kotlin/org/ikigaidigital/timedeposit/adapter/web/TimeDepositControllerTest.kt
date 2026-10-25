@@ -1,7 +1,7 @@
 package org.ikigaidigital.timedeposit.adapter.web
 
 import org.assertj.core.api.Assertions.assertThat
-import org.ikigaidigital.UseCaseConfiguration
+import org.ikigaidigital.ApplicationConfiguration
 import org.ikigaidigital.timedeposit.application.InMemoryTimeDepositRepository
 import org.ikigaidigital.timedeposit.domain.TimeDepositStatement
 import org.ikigaidigital.timedeposit.domain.Withdrawal
@@ -17,11 +17,11 @@ import java.math.BigDecimal
 import java.time.LocalDate
 
 /**
- * The web slice with the real use cases and their real wiring (`UseCaseConfiguration`) over an
- * in-memory port and a fake transaction boundary, so nothing is mocked. Bodies are compared as raw text to pin the number and date formats.
+ * The web slice with the real service and its real wiring (`ApplicationConfiguration`) over an
+ * in-memory port, so nothing is mocked. Bodies are compared as raw text to pin the number and date formats.
  */
 @WebMvcTest(TimeDepositController::class)
-@Import(UseCaseConfiguration::class, TimeDepositControllerTest.FakePorts::class)
+@Import(ApplicationConfiguration::class, TimeDepositControllerTest.FakePorts::class)
 class TimeDepositControllerTest {
 
     @TestConfiguration(proxyBeanMethods = false)

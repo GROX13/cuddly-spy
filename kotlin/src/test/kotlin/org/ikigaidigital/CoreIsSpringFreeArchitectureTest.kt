@@ -8,8 +8,8 @@ import com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses
 import org.junit.jupiter.api.Test
 
 /**
- * The core (domain and application) is plain Kotlin: use cases are created in
- * [UseCaseConfiguration], never annotated as Spring beans (ADR 0011). The one exception is the
+ * The core (domain and application) is plain Kotlin: `TimeDepositService` is created in
+ * [ApplicationConfiguration], never annotated as a Spring bean (ADR 0011, ADR 0016). The one exception is the
  * application layer's transaction boundary, `@Transactional` (ADR 0014). The domain rule overlaps
  * ArchitectureTest's, but states the Spring-free intent for the whole core in one place.
  */

@@ -13,8 +13,10 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.aop.support.AopUtils
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.autoconfigure.ImportAutoConfiguration
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest
 import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager
+import org.springframework.boot.persistence.autoconfigure.PersistenceExceptionTranslationAutoConfiguration
 import org.springframework.context.annotation.Import
 import org.springframework.dao.InvalidDataAccessApiUsageException
 import org.springframework.jdbc.core.JdbcTemplate
@@ -27,9 +29,10 @@ import java.time.LocalDate
 import javax.sql.DataSource
 
 /**
- * The persistence adapter against real Postgres with the Liquibase schema. Each test runs in a
- * transaction that is rolled back. Rows are inserted with JDBC on that same transaction where exact
- * ids matter (ordering), otherwise through the entities.
+ * The persistence adapter against real Postgres with the Liquibase schema. `@DataJpaTest` scans no
+ * `@Repository` classes, so the adapter is imported, with the exception translation it gets in the
+ * application. Each test runs in a transaction that is rolled back. Rows are inserted with JDBC on
+ * that same transaction where exact ids matter (ordering), otherwise through the entities.
  */
 @DataJpaTest(
     properties = [
@@ -37,7 +40,9 @@ import javax.sql.DataSource
             "org.ikigaidigital.timedeposit.adapter.persistence.RecordingStatementInspector",
     ],
 )
-@Import(TestcontainersConfiguration::class)
+@Import(TestcontainersConfiguration::class, JpaTimeDepositRepository::class)
+// The slice leaves out the exception translation the full application has (ApplicationIT checks it there).
+@ImportAutoConfiguration(PersistenceExceptionTranslationAutoConfiguration::class)
 @Testcontainers(disabledWithoutDocker = true)
 class TimeDepositRepositoryIT {
 
@@ -68,11 +73,11 @@ class TimeDepositRepositoryIT {
     }
 
     @Test
-    fun `should serve the port from the Spring Data repository proxy`() {
-        // No hand-written adapter (ADR 0010): the port bean is Spring Data's JDK proxy of the
-        // repository interface, which runs the port's Kotlin default methods.
-        assertThat(AopUtils.isJdkDynamicProxy(repository)).isTrue
-        assertThat(repository).isInstanceOf(TimeDepositJpaRepository::class.java)
+    fun `should serve the port from the JPA class behind an exception-translation proxy`() {
+        // `@Repository` (ADR 0016): Spring wraps the one hand-written adapter in a proxy that
+        // translates its exceptions into DataAccessExceptions.
+        assertThat(AopUtils.isAopProxy(repository)).isTrue
+        assertThat(AopUtils.getTargetClass(repository)).isEqualTo(JpaTimeDepositRepository::class.java)
     }
 
     @Test
@@ -264,7 +269,7 @@ class TimeDepositRepositoryIT {
     fun `should reject a balance for an unknown time deposit`() {
         insertDeposit(1, "basic", 31, "1000.00")
 
-        // The repository proxy translates the default method's IllegalArgumentException.
+        // The @Repository proxy translates the adapter's IllegalArgumentException.
         assertThatExceptionOfType(InvalidDataAccessApiUsageException::class.java)
             .isThrownBy { repository.saveBalances(listOf(TimeDeposit(42, "basic", 1.0, 31))) }
             .withMessage("No time deposit with id 42")
