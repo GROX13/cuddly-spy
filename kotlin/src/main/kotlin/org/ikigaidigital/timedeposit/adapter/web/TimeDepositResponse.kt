@@ -6,15 +6,28 @@ import java.math.BigDecimal
 
 @Schema(description = "A time deposit with its withdrawals")
 data class TimeDepositResponse(
-    @field:Schema(description = "Time deposit id", example = "2")
+    @field:Schema(description = "Time deposit id", example = "2", requiredMode = Schema.RequiredMode.REQUIRED)
     val id: Int,
-    @field:Schema(description = "Plan type code: basic, student or premium", example = "basic")
+    @field:Schema(
+        description = "Plan type code: basic, student or premium", example = "basic",
+        requiredMode = Schema.RequiredMode.REQUIRED,
+    )
     val planType: String,
-    @field:Schema(description = "Current balance, two decimals", example = "1500.00")
+    @field:Schema(
+        description = "Current balance, two decimals", example = "1500.00",
+        requiredMode = Schema.RequiredMode.REQUIRED,
+        type = "number", types = ["number"], multipleOf = 0.01,
+    )
     val balance: BigDecimal,
-    @field:Schema(description = "Days since the time deposit was opened", example = "400")
+    @field:Schema(
+        description = "Days since the time deposit was opened", example = "400",
+        requiredMode = Schema.RequiredMode.REQUIRED,
+    )
     val days: Int,
-    @field:Schema(description = "Withdrawals ordered by date, then id; empty when there are none")
+    @field:Schema(
+        description = "Withdrawals ordered by date, then id; empty when there are none",
+        requiredMode = Schema.RequiredMode.REQUIRED,
+    )
     val withdrawals: List<WithdrawalResponse>,
 )
 

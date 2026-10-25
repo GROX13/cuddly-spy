@@ -1,11 +1,17 @@
 package org.ikigaidigital
 
+import io.swagger.v3.oas.annotations.Hidden
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment.RANDOM_PORT
 import org.springframework.boot.test.web.server.LocalServerPort
 import org.springframework.context.annotation.Import
+import org.springframework.web.bind.annotation.RequestMethod
+import org.springframework.web.servlet.mvc.method.RequestMappingInfo
+import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping
 import org.testcontainers.junit.jupiter.Testcontainers
 import tools.jackson.databind.json.JsonMapper
 import java.net.URI
@@ -14,8 +20,8 @@ import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 
 /**
- * springdoc serves the generated OpenAPI document and Swagger UI. The operation set is pinned, so a
- * third endpoint fails the build ("exactly two API endpoints", AGENTS.md).
+ * Pins the generated OpenAPI document and the runtime application mappings independently, so hidden
+ * operations cannot evade the "exactly two API endpoints" rule (AGENTS.md).
  */
 @SpringBootTest(webEnvironment = RANDOM_PORT)
 @Import(TestcontainersConfiguration::class)
@@ -24,6 +30,9 @@ class SwaggerIT {
 
     @LocalServerPort
     private var port: Int = 0
+
+    @Autowired
+    private lateinit var handlerMappings: List<RequestMappingHandlerMapping>
 
     private val http = HttpClient.newHttpClient()
 
@@ -42,6 +51,45 @@ class SwaggerIT {
             assertThat(it).startsWith("application/json")
         }
         assertThat(response.body()).contains("\"openapi\"")
+    }
+
+    @Test
+    fun `should register exactly the two agreed application operations`() {
+        assertApplicationOperations()
+    }
+
+    @Test
+    fun `should detect a third application mapping even when hidden from OpenAPI`() {
+        val mapping = handlerMappings.first()
+        val extra = RequestMappingInfo.paths("/review-hidden-probe").methods(RequestMethod.GET).build()
+        mapping.registerMapping(extra, HiddenHandler(), HiddenHandler::class.java.getMethod("hidden"))
+        try {
+            assertThatThrownBy { assertApplicationOperations() }
+                .isInstanceOf(AssertionError::class.java)
+                .hasMessageContaining("GET /review-hidden-probe")
+        } finally {
+            mapping.unregisterMapping(extra)
+        }
+    }
+
+    private fun assertApplicationOperations() {
+        // Infrastructure handlers (/error, Swagger) are framework-owned; every application package counts.
+        val operations = handlerMappings.flatMap { mapping ->
+            mapping.handlerMethods.entries
+                .filter { (_, handler) -> handler.beanType.name.startsWith("org.ikigaidigital.") }
+                .flatMap { (info, _) ->
+                    info.patternValues.flatMap { path ->
+                        val methods = info.methodsCondition.methods.map { it.name }.ifEmpty { listOf("*") }
+                        methods.map { "$it $path" }
+                    }
+                }
+        }
+        assertThat(operations).containsExactlyInAnyOrder("GET /time-deposits", "POST /time-deposits/balance-updates")
+    }
+
+    class HiddenHandler {
+        @Hidden
+        fun hidden() = "fixture"
     }
 
     @Test
@@ -66,6 +114,37 @@ class SwaggerIT {
         assertThat(schema.path("items").path("\$ref").asString()).isEqualTo("#/components/schemas/TimeDepositResponse")
         assertThat(api.path("components").path("schemas").path("TimeDepositResponse").path("properties").propertyNames())
             .containsExactly("id", "planType", "balance", "days", "withdrawals")
+    }
+
+    @Test
+    fun `should require every time deposit response field and describe cent precision`() {
+        val schemas = JsonMapper.builder().build().readTree(get("/v3/api-docs").body())
+            .path("components").path("schemas")
+        val deposit = schemas.path("TimeDepositResponse")
+
+        assertThat(deposit.path("required").toList().map { it.asString() })
+            .containsExactlyInAnyOrder("id", "planType", "balance", "days", "withdrawals")
+        val properties = deposit.path("properties")
+        assertThat(properties.path("balance").path("type").asString()).isEqualTo("number")
+        assertThat(properties.path("balance").path("multipleOf").asString()).isEqualTo("0.01")
+        assertThat(properties.path("withdrawals").path("type").asString()).isEqualTo("array")
+        assertThat(properties.path("withdrawals").path("items").path("\$ref").asString())
+            .isEqualTo("#/components/schemas/WithdrawalResponse")
+    }
+
+    @Test
+    fun `should require every withdrawal field and describe money and dates`() {
+        val withdrawal = JsonMapper.builder().build().readTree(get("/v3/api-docs").body())
+            .path("components").path("schemas").path("WithdrawalResponse")
+
+        assertThat(withdrawal.path("required").toList().map { it.asString() })
+            .containsExactlyInAnyOrder("id", "amount", "date")
+        val properties = withdrawal.path("properties")
+        assertThat(properties.propertyNames()).containsExactlyInAnyOrder("id", "amount", "date")
+        assertThat(properties.path("amount").path("type").asString()).isEqualTo("number")
+        assertThat(properties.path("amount").path("multipleOf").asString()).isEqualTo("0.01")
+        assertThat(properties.path("date").path("type").asString()).isEqualTo("string")
+        assertThat(properties.path("date").path("format").asString()).isEqualTo("date")
     }
 
     @Test
