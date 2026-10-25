@@ -128,6 +128,52 @@ class BalanceUpdatesApiIT {
         }
     }
 
+    /**
+     * Basic at day 0 earns nothing. The Double the calculator gets, 90071992547409.90625, can't hold
+     * the cents (ulp 1/64), yet the stored decimal must come back and stay exactly as it was (ADR 0015).
+     */
+    @Test
+    fun `should keep cents a Double can't hold on a time deposit that earns nothing`() {
+        insertDeposit(1, "basic", 0, "90071992547409.91")
+        val expected = """[{"id":1,"planType":"basic","balance":90071992547409.91,"days":0,"withdrawals":[]}]"""
+
+        assertThat(getTimeDeposits().body()).isEqualTo(expected)
+        val response = postBalanceUpdates()
+
+        assertThat(response.statusCode()).isEqualTo(200)
+        assertThat(response.body()).isEqualTo(expected)
+        assertThat(storedBalances()).containsExactly(BigDecimal("90071992547409.91"))
+    }
+
+    /** NUMERIC(19,2)'s maximum, whose Double is 1e17: writing that back would overflow the column. */
+    @Test
+    fun `should leave the largest storable balance unchanged when it earns nothing`() {
+        insertDeposit(1, "basic", 0, "99999999999999999.99")
+        val expected = """[{"id":1,"planType":"basic","balance":99999999999999999.99,"days":0,"withdrawals":[]}]"""
+
+        assertThat(getTimeDeposits().body()).isEqualTo(expected)
+        val response = postBalanceUpdates()
+
+        assertThat(response.statusCode()).isEqualTo(200)
+        assertThat(response.body()).isEqualTo(expected)
+        assertThat(storedBalances()).containsExactly(BigDecimal("99999999999999999.99"))
+    }
+
+    /**
+     * The documented limit (ADR 0015): a balance that earns past NUMERIC(19,2)'s maximum overflows the
+     * column, and the whole batch fails and rolls back, the normal deposit next to it included.
+     */
+    @Test
+    fun `should fail the whole update and roll it back when an earning balance would overflow the column`() {
+        insertDeposit(1, "basic", 400, "1500.00")
+        insertDeposit(2, "basic", 400, "99999999999999999.99")
+
+        val response = postBalanceUpdates()
+
+        assertThat(response.statusCode()).isEqualTo(500)
+        assertThat(storedBalances()).containsExactly(BigDecimal("1500.00"), BigDecimal("99999999999999999.99"))
+    }
+
     @Test
     fun `should return an empty array when there are no time deposits`() {
         val response = postBalanceUpdates()

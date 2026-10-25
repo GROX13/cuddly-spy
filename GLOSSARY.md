@@ -28,6 +28,10 @@ _Avoid_: Amount, principal
 A historical record of an amount taken out of a time deposit on a given date; the balance already reflects it.
 _Avoid_: Debit, payout
 
+**Time deposit statement**:
+A time deposit's stored, exact state (id, plan type, balance to the cent, days) together with its withdrawals; it is what listing the time deposits and updating their balances show.
+_Avoid_: Time deposit with withdrawals, deposit view, summary
+
 **Monthly interest**:
 One twelfth of the plan type's annual rate applied to the balance, added when balances are updated.
 _Avoid_: Yield, return

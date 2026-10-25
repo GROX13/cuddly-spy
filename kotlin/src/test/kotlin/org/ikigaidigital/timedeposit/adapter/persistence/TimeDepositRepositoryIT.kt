@@ -5,8 +5,9 @@ import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatExceptionOfType
 import org.ikigaidigital.TestcontainersConfiguration
 import org.ikigaidigital.timedeposit.domain.TimeDeposit
+import org.ikigaidigital.timedeposit.domain.TimeDepositCalculator
 import org.ikigaidigital.timedeposit.application.TimeDepositRepository
-import org.ikigaidigital.timedeposit.domain.TimeDepositWithWithdrawals
+import org.ikigaidigital.timedeposit.domain.TimeDepositStatement
 import org.ikigaidigital.timedeposit.domain.Withdrawal
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -87,17 +88,17 @@ class TimeDepositRepositoryIT {
         insertWithdrawal(30, 3, "250.00", "2026-08-20")
 
         assertThat(repository.loadAllWithWithdrawals()).containsExactly(
-            TimeDepositWithWithdrawals(
-                TimeDeposit(1, "basic", 1000.83, 31),
+            TimeDepositStatement(
+                1, "basic", BigDecimal("1000.83"), 31,
                 listOf(
                     Withdrawal(20, BigDecimal("100.00"), LocalDate.of(2026, 3, 15)),
                     Withdrawal(21, BigDecimal("75.00"), LocalDate.of(2026, 3, 15)),
                     Withdrawal(10, BigDecimal("50.00"), LocalDate.of(2026, 6, 1)),
                 ),
             ),
-            TimeDepositWithWithdrawals(TimeDeposit(2, "student", 2500.0, 400), emptyList()),
-            TimeDepositWithWithdrawals(
-                TimeDeposit(3, "premium", 5000.0, 46),
+            TimeDepositStatement(2, "student", BigDecimal("2500.00"), 400, emptyList()),
+            TimeDepositStatement(
+                3, "premium", BigDecimal("5000.00"), 46,
                 listOf(Withdrawal(30, BigDecimal("250.00"), LocalDate.of(2026, 8, 20))),
             ),
         )
@@ -120,6 +121,16 @@ class TimeDepositRepositoryIT {
         assertThat(RecordingStatementInspector.statements).singleElement().satisfies({
             assertThat(it).containsIgnoringCase("left join withdrawals")
         })
+    }
+
+    @Test
+    fun `should load the stored balance exactly, even cents a Double can't hold`() {
+        // 90071992547409.91 as a Double is 90071992547409.90625; 99999999999999999.99 rounds to 1e17.
+        insertDeposit(1, "basic", 0, "90071992547409.91")
+        insertDeposit(2, "basic", 0, "99999999999999999.99")
+
+        assertThat(repository.loadAllWithWithdrawals().map { it.balance })
+            .containsExactly(BigDecimal("90071992547409.91"), BigDecimal("99999999999999999.99"))
     }
 
     @Test
@@ -158,17 +169,18 @@ class TimeDepositRepositoryIT {
     }
 
     @Test
-    fun `should save balances rounded half up to two places`() {
+    fun `should save the stored balance plus the change, rounded half up to two places`() {
         insertDeposit(1, "basic", 31, "10.00")
         insertDeposit(2, "student", 31, "1000.00")
-        insertDeposit(3, "premium", 46, "2.00")
+        insertDeposit(3, "premium", 46, "1.00")
         val deposits = repository.loadAllForUpdate()
-        // Checked independently in jshell. 10.850000000000001 is a typical floating-point artifact.
-        // 2.675 is stored as 2.67499999999999982236431605997495353221893310546875, so only rounding
-        // the shortest decimal form (BigDecimal.valueOf) gives 2.68; new BigDecimal(2.675) gives 2.67.
+        // Checked independently in Python. The changes are 0.8500000000000014 (typical floating-point
+        // noise), 0.8350000000000364 and the Double 2.675, stored as
+        // 2.67499999999999982236431605997495353221893310546875: only rounding its shortest decimal
+        // form (BigDecimal.valueOf) gives 2.68; new BigDecimal(2.675) gives 2.67.
         deposits[0].balance = 10.850000000000001
         deposits[1].balance = 1000.835
-        deposits[2].balance = 2.675
+        deposits[2].balance = 3.675
 
         repository.saveBalances(deposits)
         entityManager.flush()
@@ -176,8 +188,38 @@ class TimeDepositRepositoryIT {
         assertThat(storedBalances()).containsExactly(
             BigDecimal("10.85"),
             BigDecimal("1000.84"),
-            BigDecimal("2.68"),
+            BigDecimal("3.68"),
         )
+    }
+
+    @Test
+    fun `should keep a non-earning balance exactly through the calculator, even cents a Double can't hold`() {
+        // Basic at day 0 earns nothing; its Double, 90071992547409.90625, would be written back as .90.
+        insertDeposit(1, "basic", 0, "90071992547409.91")
+        val deposits = repository.loadAllForUpdate()
+
+        TimeDepositCalculator().updateBalance(deposits)
+        repository.saveBalances(deposits)
+        entityManager.flush()
+
+        assertThat(storedBalances()).containsExactly(BigDecimal("90071992547409.91"))
+    }
+
+    @Test
+    fun `should not write a time deposit whose balance did not change`() {
+        // The first one's Double differs from the stored decimal, so writing it back would change the row.
+        insertDeposit(1, "basic", 0, "90071992547409.91")
+        insertDeposit(2, "basic", 31, "1000.00")
+        val deposits = repository.loadAllForUpdate()
+        deposits[1].balance = 1000.83
+        RecordingStatementInspector.statements.clear()
+
+        repository.saveBalances(deposits)
+        entityManager.flush()
+
+        assertThat(RecordingStatementInspector.statements)
+            .containsExactly("update time_deposits set balance=? where id=?")
+        assertThat(storedBalances()).containsExactly(BigDecimal("90071992547409.91"), BigDecimal("1000.83"))
     }
 
     @Test

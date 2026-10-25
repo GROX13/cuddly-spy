@@ -1,9 +1,8 @@
 package org.ikigaidigital.timedeposit.adapter.web
 
 import io.swagger.v3.oas.annotations.media.Schema
-import org.ikigaidigital.timedeposit.domain.TimeDepositWithWithdrawals
+import org.ikigaidigital.timedeposit.domain.TimeDepositStatement
 import java.math.BigDecimal
-import java.math.RoundingMode
 
 @Schema(description = "A time deposit with its withdrawals")
 data class TimeDepositResponse(
@@ -20,13 +19,13 @@ data class TimeDepositResponse(
 )
 
 /**
- * The balance is a Double in the frozen `TimeDeposit`; it leaves with the same rounding as the
- * persistence write. `valueOf` rounds the shortest decimal form, so 2.675 gives 2.68, not 2.67.
+ * The balance is the stored NUMERIC(19,2), so it already has two decimals and is sent as is; it
+ * never passes through the frozen `TimeDeposit`'s Double (ADR 0002, ADR 0015).
  */
-internal fun TimeDepositWithWithdrawals.toResponse() = TimeDepositResponse(
-    id = deposit.id,
-    planType = deposit.planType,
-    balance = BigDecimal.valueOf(deposit.balance).setScale(2, RoundingMode.HALF_UP),
-    days = deposit.days,
+internal fun TimeDepositStatement.toResponse() = TimeDepositResponse(
+    id = id,
+    planType = planType,
+    balance = balance,
+    days = days,
     withdrawals = withdrawals.map { it.toResponse() },
 )

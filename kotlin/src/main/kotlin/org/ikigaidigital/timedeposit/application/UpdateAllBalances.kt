@@ -1,7 +1,7 @@
 package org.ikigaidigital.timedeposit.application
 
 import org.ikigaidigital.timedeposit.domain.TimeDepositCalculator
-import org.ikigaidigital.timedeposit.domain.TimeDepositWithWithdrawals
+import org.ikigaidigital.timedeposit.domain.TimeDepositStatement
 import org.springframework.transaction.annotation.Transactional
 
 /**
@@ -19,7 +19,7 @@ class UpdateAllBalances(
     private val repository: TimeDepositRepository,
     private val calculator: TimeDepositCalculator,
 ) {
-    fun execute(): List<TimeDepositWithWithdrawals> {
+    fun execute(): List<TimeDepositStatement> {
         val deposits = repository.loadAllForUpdate()
         calculator.updateBalance(deposits) // the frozen legacy calculator mutates the balances in place
         repository.saveBalances(deposits)

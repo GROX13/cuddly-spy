@@ -2,6 +2,8 @@
 
 Hexagonal dependencies point inward (ADR 0007), so the application layer owns a plain-Kotlin port, `TimeDepositRepository` (`loadAllWithWithdrawals`, `loadAllForUpdate`, `saveBalances`), with no JPA or Spring import. It is implemented by `TimeDepositJpaRepository`, a Spring Data `Repository<TimeDepositEntity, Int>` that also extends the port. Declared `@Query` methods do the database work: a left fetch-join for the read, and a `PESSIMISTIC_WRITE` select for the update. Kotlin default methods on the same interface map entities to the domain and write balances back as `BigDecimal.valueOf(balance).setScale(2, HALF_UP)` on the locked, managed entities. Spring Data generates the implementation and runs the default methods, so there is no hand-written adapter class. JPA entities stay separate from the domain, and the frozen `TimeDeposit` is untouched (ADR 0001).
 
+Amended by [ADR 0015](0015-exact-balances-around-the-double-calculator.md): `loadAllWithWithdrawals` maps the stored balance straight to `TimeDepositStatement`, and `saveBalances` writes `balanceAfterUpdate(stored, stored.toDouble(), balance)` instead of `BigDecimal.valueOf(balance)`, skipping deposits that did not change.
+
 ## Considered options
 - **Use cases call Spring Data directly**: the application would depend on the adapter and JPA; not hexagonal, and ArchUnit rejects it.
 - **A hand-written adapter class** delegating to a Spring Data repository: sound, but an extra class whose only job is the mapping.

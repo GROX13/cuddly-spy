@@ -1,9 +1,8 @@
 package org.ikigaidigital.timedeposit.application
 
 import org.assertj.core.api.Assertions.assertThat
-import org.ikigaidigital.timedeposit.domain.TimeDeposit
 import org.ikigaidigital.timedeposit.domain.TimeDepositCalculator
-import org.ikigaidigital.timedeposit.domain.TimeDepositWithWithdrawals
+import org.ikigaidigital.timedeposit.domain.TimeDepositStatement
 import org.ikigaidigital.timedeposit.domain.Withdrawal
 import org.junit.jupiter.api.Test
 import java.math.BigDecimal
@@ -19,8 +18,8 @@ class UpdateAllBalancesTest {
     private val withdrawal = Withdrawal(10, BigDecimal("50.00"), LocalDate.of(2026, 6, 1))
     private val repository = InMemoryTimeDepositRepository(
         listOf(
-            TimeDepositWithWithdrawals(TimeDeposit(1, "basic", 1000.0, 31), listOf(withdrawal)),
-            TimeDepositWithWithdrawals(TimeDeposit(2, "student", 2500.0, 400), emptyList()),
+            TimeDepositStatement(1, "basic", BigDecimal("1000.00"), 31, listOf(withdrawal)),
+            TimeDepositStatement(2, "student", BigDecimal("2500.00"), 400, emptyList()),
         ),
         events,
     )
@@ -30,17 +29,17 @@ class UpdateAllBalancesTest {
     fun `should save one month of interest on every time deposit`() {
         updateAllBalances.execute()
 
-        assertThat(repository.deposits.map { it.deposit }).containsExactly(
-            TimeDeposit(1, "basic", 1000.83, 31),
-            TimeDeposit(2, "student", 2500.0, 400),
+        assertThat(repository.deposits.map { it.id to it.balance }).containsExactly(
+            1 to BigDecimal("1000.83"),
+            2 to BigDecimal("2500.00"),
         )
     }
 
     @Test
     fun `should return the time deposits re-read after saving, with their withdrawals`() {
         assertThat(updateAllBalances.execute()).containsExactly(
-            TimeDepositWithWithdrawals(TimeDeposit(1, "basic", 1000.83, 31), listOf(withdrawal)),
-            TimeDepositWithWithdrawals(TimeDeposit(2, "student", 2500.0, 400), emptyList()),
+            TimeDepositStatement(1, "basic", BigDecimal("1000.83"), 31, listOf(withdrawal)),
+            TimeDepositStatement(2, "student", BigDecimal("2500.00"), 400, emptyList()),
         )
     }
 

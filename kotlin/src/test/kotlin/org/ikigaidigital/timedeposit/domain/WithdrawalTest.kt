@@ -20,9 +20,9 @@ class WithdrawalTest {
         val first = Withdrawal(20, BigDecimal("100.00"), LocalDate.of(2026, 3, 15))
         val second = Withdrawal(10, BigDecimal("50.00"), LocalDate.of(2026, 6, 1))
 
-        val loaded = TimeDepositWithWithdrawals(TimeDeposit(1, "basic", 1000.83, 31), listOf(first, second))
+        val loaded = TimeDepositStatement(1, "basic", BigDecimal("1000.83"), 31, listOf(first, second))
 
-        assertThat(loaded.deposit).isEqualTo(TimeDeposit(1, "basic", 1000.83, 31))
+        assertThat(loaded.balance).isEqualTo(BigDecimal("1000.83"))
         assertThat(loaded.withdrawals).containsExactly(
             Withdrawal(20, BigDecimal("100.00"), LocalDate.of(2026, 3, 15)),
             Withdrawal(10, BigDecimal("50.00"), LocalDate.of(2026, 6, 1)),

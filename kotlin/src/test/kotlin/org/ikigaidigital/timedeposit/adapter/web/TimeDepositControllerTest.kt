@@ -1,10 +1,9 @@
 package org.ikigaidigital.timedeposit.adapter.web
 
 import org.assertj.core.api.Assertions.assertThat
-import org.ikigaidigital.timedeposit.domain.TimeDeposit
 import org.ikigaidigital.UseCaseConfiguration
 import org.ikigaidigital.timedeposit.application.InMemoryTimeDepositRepository
-import org.ikigaidigital.timedeposit.domain.TimeDepositWithWithdrawals
+import org.ikigaidigital.timedeposit.domain.TimeDepositStatement
 import org.ikigaidigital.timedeposit.domain.Withdrawal
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
@@ -40,8 +39,8 @@ class TimeDepositControllerTest {
     @Test
     fun `should return time deposits with camelCase fields, two-decimal money and ISO dates`() {
         repository.deposits = listOf(
-            TimeDepositWithWithdrawals(
-                TimeDeposit(1, "basic", 1000.0, 400),
+            TimeDepositStatement(
+                1, "basic", BigDecimal("1000.00"), 400,
                 listOf(
                     Withdrawal(11, BigDecimal("100.00"), LocalDate.of(2026, 3, 15)),
                     Withdrawal(10, BigDecimal("50.00"), LocalDate.of(2026, 6, 1)),
@@ -60,24 +59,23 @@ class TimeDepositControllerTest {
     }
 
     /**
-     * Balances are Doubles in the frozen contract and can carry binary noise; they leave as
-     * `BigDecimal.valueOf(balance).setScale(2, HALF_UP)`, the same rule as the persistence write.
-     * Checked independently in jshell: 2.675 rounds to 2.68 only from its shortest decimal form, and
-     * 1.0E7 must not come out in exponent notation.
+     * Balances are the stored NUMERIC(19,2) decimals and leave exactly as stored (ADR 0015): cents a
+     * Double can't hold (90071992547409.91 would read back as ...409.90625), the column's maximum, and
+     * no exponent notation for 10000000.00.
      */
     @Test
-    fun `should round the balance half up to two decimals and keep empty withdrawals as an empty array`() {
+    fun `should return the stored balance exactly and keep empty withdrawals as an empty array`() {
         repository.deposits = listOf(
-            TimeDepositWithWithdrawals(TimeDeposit(1, "premium", 10.850000000000001, 46), emptyList()),
-            TimeDepositWithWithdrawals(TimeDeposit(2, "basic", 2.675, 31), emptyList()),
-            TimeDepositWithWithdrawals(TimeDeposit(3, "student", 1.0E7, 200), emptyList()),
+            TimeDepositStatement(1, "premium", BigDecimal("90071992547409.91"), 46, emptyList()),
+            TimeDepositStatement(2, "basic", BigDecimal("99999999999999999.99"), 31, emptyList()),
+            TimeDepositStatement(3, "student", BigDecimal("10000000.00"), 200, emptyList()),
         )
 
         assertThat(mvc.get().uri("/time-deposits"))
             .hasStatusOk()
             .bodyText().isEqualTo(
-                """[{"id":1,"planType":"premium","balance":10.85,"days":46,"withdrawals":[]},""" +
-                    """{"id":2,"planType":"basic","balance":2.68,"days":31,"withdrawals":[]},""" +
+                """[{"id":1,"planType":"premium","balance":90071992547409.91,"days":46,"withdrawals":[]},""" +
+                    """{"id":2,"planType":"basic","balance":99999999999999999.99,"days":31,"withdrawals":[]},""" +
                     """{"id":3,"planType":"student","balance":10000000.00,"days":200,"withdrawals":[]}]"""
             )
     }
@@ -96,11 +94,11 @@ class TimeDepositControllerTest {
     @Test
     fun `should add one month of interest on a POST with no body and return every time deposit`() {
         repository.deposits = listOf(
-            TimeDepositWithWithdrawals(
-                TimeDeposit(1, "basic", 1000.0, 400),
+            TimeDepositStatement(
+                1, "basic", BigDecimal("1000.00"), 400,
                 listOf(Withdrawal(11, BigDecimal("100.00"), LocalDate.of(2026, 3, 15))),
             ),
-            TimeDepositWithWithdrawals(TimeDeposit(2, "premium", 5000.0, 40), emptyList()),
+            TimeDepositStatement(2, "premium", BigDecimal("5000.00"), 40, emptyList()),
         )
 
         assertThat(mvc.post().uri("/time-deposits/balance-updates"))

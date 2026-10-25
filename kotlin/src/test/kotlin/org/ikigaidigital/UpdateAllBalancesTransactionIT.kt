@@ -5,7 +5,7 @@ import org.assertj.core.api.Assertions.assertThatIllegalStateException
 import org.ikigaidigital.timedeposit.application.TimeDepositRepository
 import org.ikigaidigital.timedeposit.application.UpdateAllBalances
 import org.ikigaidigital.timedeposit.domain.TimeDepositCalculator
-import org.ikigaidigital.timedeposit.domain.TimeDepositWithWithdrawals
+import org.ikigaidigital.timedeposit.domain.TimeDepositStatement
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -32,7 +32,7 @@ class UpdateAllBalancesTransactionIT {
 
     /** Delegates to the real repository, but fails right after the balances are saved and flushed. */
     class FailingAfterSaveRepository(private val delegate: TimeDepositRepository) : TimeDepositRepository by delegate {
-        override fun loadAllWithWithdrawals(): List<TimeDepositWithWithdrawals> {
+        override fun loadAllWithWithdrawals(): List<TimeDepositStatement> {
             delegate.loadAllWithWithdrawals() // Hibernate flushes the UPDATEs before this query
             error("failed after saving")
         }

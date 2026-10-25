@@ -1,6 +1,6 @@
 package org.ikigaidigital.timedeposit.application
 
-import org.ikigaidigital.timedeposit.domain.TimeDepositWithWithdrawals
+import org.ikigaidigital.timedeposit.domain.TimeDepositStatement
 
 /**
  * Use case: lists every time deposit with its withdrawals (deposits by id; withdrawals by date, then
@@ -8,5 +8,5 @@ import org.ikigaidigital.timedeposit.domain.TimeDepositWithWithdrawals
  * the repository fetch-joins the withdrawals and maps inside Spring Data's transaction.
  */
 class ListTimeDeposits(private val repository: TimeDepositRepository) {
-    fun execute(): List<TimeDepositWithWithdrawals> = repository.loadAllWithWithdrawals()
+    fun execute(): List<TimeDepositStatement> = repository.loadAllWithWithdrawals()
 }
