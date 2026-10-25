@@ -3,7 +3,7 @@ package org.ikigaidigital
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatExceptionOfType
 import org.ikigaidigital.timedeposit.application.TimeDepositRepository
-import org.ikigaidigital.timedeposit.domain.TimeDeposit
+import java.math.BigDecimal
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.getBean
@@ -45,12 +45,12 @@ class ApplicationIT {
 
     /**
      * The full application puts the `@Repository` adapter behind Spring's exception translation
-     * (ADR 0016); `TimeDepositRepositoryIT` imports the same auto-configuration into its slice.
+     * (ADR 0017); `TimeDepositRepositoryIT` imports the same auto-configuration into its slice.
      */
     @Test
     fun `should translate the persistence adapter's exceptions`() {
         assertThatExceptionOfType(InvalidDataAccessApiUsageException::class.java)
-            .isThrownBy { context.getBean<TimeDepositRepository>().saveBalances(listOf(TimeDeposit(42, "basic", 1.0, 31))) }
+            .isThrownBy { context.getBean<TimeDepositRepository>().saveBalances(mapOf(42 to BigDecimal("1.00"))) }
             .withMessage("No time deposit with id 42")
     }
 }

@@ -9,7 +9,7 @@ Balances are stored as exact `NUMERIC(19,2)` decimals (ADR 0002), but until now 
 
 The read model now carries the stored decimal itself and never goes through a Double. It was also renamed from `TimeDepositWithWithdrawals` to `TimeDepositStatement`: like a bank statement, it is a balance plus its movements (the withdrawals). Older ADRs keep the old name as history. `TimeDeposit` exists only as the calculator's input, so the frozen contract is untouched.
 
-The write keeps the stored decimal and adds only the change the calculator made: `balanceAfterUpdate(stored, before, after)` returns `stored` plus the change `after - before` rounded HALF_UP to cents (via `BigDecimal.valueOf`, so 2.675 gives 2.68), or `stored` itself when the change is zero. The persistence adapter takes `before` from the same managed, locked entity it loaded for the calculator, so it is exactly the Double the calculator was given. An unchanged balance is the same instance, so Hibernate issues no UPDATE for it. The subtraction is exact (Sterbenz lemma), because one month's interest keeps `after` within a factor of two of `before`.
+The write keeps the stored decimal and adds only the change the calculator made: `balanceAfterUpdate(stored, before, after)` returns `stored` plus the change `after - before` rounded HALF_UP to cents (via `BigDecimal.valueOf`, so 2.675 gives 2.68), or `stored` itself when the change is zero. The application takes `before` from an immutable `TimeDepositSnapshot` of the locked row, so it is exactly the Double the calculator was given. `TimeDepositService` keeps `balanceAfterUpdate` as a private method and sends final decimal balances to persistence; the adapter performs no monetary calculation. An unchanged balance is the same instance, so Hibernate issues no UPDATE for it. The subtraction is exact (Sterbenz lemma), because one month's interest keeps `after` within a factor of two of `before`.
 
 ## How close it stays to the legacy result
 Measured in Python by simulating binary64 over random balances for all three plan types; `R` is the interest the legacy calculator rounds to cents:
@@ -26,5 +26,5 @@ An earning balance near 10^17 can still pass `99999999999999999.99` and overflow
 
 ## Consequences
 - `TimeDepositStatement` has its own fields (`id`, `planType`, `balance: BigDecimal`, `days`, `withdrawals`); the web adapter sends `balance` as stored.
-- `saveBalances` writes nothing for a deposit whose balance did not change.
+- `saveBalances` accepts final decimal balances by id and writes nothing for a deposit whose balance did not change.
 - `BalanceUpdatesApiIT` replays both reproductions over HTTP and SQL, and pins the overflow limit: an earning deposit at the maximum returns 500 and leaves every balance unchanged.

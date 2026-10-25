@@ -32,9 +32,8 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-webmvc</artifactId>
         </dependency>
-        <!-- Hibernate and Spring's JPA support for the EntityManager-based persistence adapter (ADR 0016).
-             Boot 4 has no JPA starter without Spring Data, so this one also brings Spring Data JPA, which
-             the code doesn't use. Also brings the DataSource Liquibase uses. -->
+        <!-- Spring Data implements the entity repository behind the mapping adapter (ADR 0017).
+             Also brings Hibernate and the DataSource Liquibase uses. -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-jpa</artifactId>
@@ -211,7 +210,7 @@
                          application, both adapters): 100% line and branch in total means 100% in every
                          class, so per-package rules added nothing. The root package (main and
                          ApplicationConfiguration) is only reported. The persistence adapter is reached only
-                         by the Failsafe ITs, so the gate also proves the Kover agent instruments Failsafe. -->
+                         by the Failsafe ITs, so the gate also proves the Kover agent instruments are Failsafe. -->
                     <rules>
                         <rule>
                             <name>Time deposit code fully covered</name>

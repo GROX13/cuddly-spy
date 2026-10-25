@@ -1,7 +1,7 @@
 package org.ikigaidigital.timedeposit.application
 
-import org.ikigaidigital.timedeposit.domain.TimeDeposit
 import org.ikigaidigital.timedeposit.domain.TimeDepositStatement
+import java.math.BigDecimal
 
 /**
  * Outbound port: what the use cases need from storage. Plain Kotlin; adapter.persistence implements
@@ -13,12 +13,12 @@ interface TimeDepositRepository {
     fun loadAllWithWithdrawals(): List<TimeDepositStatement>
 
     /** Every time deposit by id, its row locked until the caller's transaction ends. */
-    fun loadAllForUpdate(): List<TimeDeposit>
+    fun loadAllForUpdate(): List<TimeDepositSnapshot>
 
     /**
-     * Adds each given time deposit's change since [loadAllForUpdate] to its stored balance, rounded
-     * HALF_UP to 2 places (ADR 0015). A deposit with no change is not written,
-     * and nothing but the balance changes. Call it in the same transaction as [loadAllForUpdate].
+     * Stores the supplied final balances (already rounded to cents), changing only the balance.
+     * Equal balances are not written; unknown ids fail. Call in the same transaction as
+     * [loadAllForUpdate] so the rows remain locked. No monetary calculation happens here.
      */
-    fun saveBalances(deposits: List<TimeDeposit>)
+    fun saveBalances(balances: Map<Int, BigDecimal>)
 }

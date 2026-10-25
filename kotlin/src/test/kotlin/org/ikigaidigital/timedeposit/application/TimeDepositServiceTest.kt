@@ -72,7 +72,7 @@ class TimeDepositServiceTest {
         // The transaction around these calls is checked against real Postgres in TimeDepositServiceTransactionIT.
         assertThat(events).containsExactly(
             "loadAllForUpdate",
-            "saveBalances[1000.83, 2500.0]",
+            "saveBalances[1000.83, 2500.00]",
             "loadAllWithWithdrawals",
         )
     }

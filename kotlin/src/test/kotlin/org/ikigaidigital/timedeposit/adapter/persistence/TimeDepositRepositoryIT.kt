@@ -4,8 +4,7 @@ import jakarta.persistence.EntityManagerFactory
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatExceptionOfType
 import org.ikigaidigital.TestcontainersConfiguration
-import org.ikigaidigital.timedeposit.domain.TimeDeposit
-import org.ikigaidigital.timedeposit.domain.TimeDepositCalculator
+import org.ikigaidigital.timedeposit.application.TimeDepositSnapshot
 import org.ikigaidigital.timedeposit.application.TimeDepositRepository
 import org.ikigaidigital.timedeposit.domain.TimeDepositStatement
 import org.ikigaidigital.timedeposit.domain.Withdrawal
@@ -40,7 +39,7 @@ import javax.sql.DataSource
             "org.ikigaidigital.timedeposit.adapter.persistence.RecordingStatementInspector",
     ],
 )
-@Import(TestcontainersConfiguration::class, JpaTimeDepositRepository::class)
+@Import(TestcontainersConfiguration::class, JpaTimeDepositAdapter::class)
 // The slice leaves out the exception translation the full application has (ApplicationIT checks it there).
 @ImportAutoConfiguration(PersistenceExceptionTranslationAutoConfiguration::class)
 @Testcontainers(disabledWithoutDocker = true)
@@ -66,6 +65,24 @@ class TimeDepositRepositoryIT {
     }
 
     @Test
+    fun `should save exact supplied balances without selecting loaded deposits again`() {
+        insertDeposit(1, "basic", 31, "90071992547409.91")
+        insertDeposit(2, "premium", 46, "10.80")
+        repository.loadAllForUpdate()
+        RecordingStatementInspector.statements.clear()
+
+        repository.saveBalances(mapOf(1 to BigDecimal("90147052541199.43"), 2 to BigDecimal("10.85")))
+        entityManager.flush()
+
+        assertThat(RecordingStatementInspector.statements).hasSize(2).allSatisfy {
+            assertThat(it).startsWith("update time_deposits set balance=")
+        }
+        entityManager.clear()
+        assertThat(repository.loadAllWithWithdrawals().map { it.balance })
+            .containsExactly(BigDecimal("90147052541199.43"), BigDecimal("10.85"))
+    }
+
+    @Test
     fun `should validate the entities against the Liquibase schema`() {
         // The real proof is that the context started at all (validate rejects any drift from Liquibase's
         // tables); this assertion only pins that validate, and not some other mode, is what ran.
@@ -73,11 +90,11 @@ class TimeDepositRepositoryIT {
     }
 
     @Test
-    fun `should serve the port from the JPA class behind an exception-translation proxy`() {
-        // `@Repository` (ADR 0016): Spring wraps the one hand-written adapter in a proxy that
+    fun `should serve the port from the mapping adapter behind an exception-translation proxy`() {
+        // `@Repository` (ADR 0017): Spring wraps the one hand-written adapter in a proxy that
         // translates its exceptions into DataAccessExceptions.
         assertThat(AopUtils.isAopProxy(repository)).isTrue
-        assertThat(AopUtils.getTargetClass(repository)).isEqualTo(JpaTimeDepositRepository::class.java)
+        assertThat(AopUtils.getTargetClass(repository)).isEqualTo(JpaTimeDepositAdapter::class.java)
     }
 
     @Test
@@ -150,8 +167,8 @@ class TimeDepositRepositoryIT {
         RecordingStatementInspector.statements.clear()
 
         assertThat(repository.loadAllForUpdate()).containsExactly(
-            TimeDeposit(1, "basic", 1000.83, 31),
-            TimeDeposit(2, "student", 2500.0, 400),
+            TimeDepositSnapshot(1, "basic", BigDecimal("1000.83"), 31),
+            TimeDepositSnapshot(2, "student", BigDecimal("2500.00"), 400),
         )
         // Hibernate 7's PostgreSQL dialect issues PESSIMISTIC_WRITE as FOR NO KEY UPDATE: the row lock
         // Postgres itself takes for an UPDATE of non-key columns. It conflicts with every other write
@@ -174,40 +191,23 @@ class TimeDepositRepositoryIT {
     }
 
     @Test
-    fun `should save the stored balance plus the change, rounded half up to two places`() {
-        insertDeposit(1, "basic", 31, "10.00")
-        insertDeposit(2, "student", 31, "1000.00")
-        insertDeposit(3, "premium", 46, "1.00")
-        val deposits = repository.loadAllForUpdate()
-        // Checked independently in Python. The changes are 0.8500000000000014 (typical floating-point
-        // noise), 0.8350000000000364 and the Double 2.675, stored as
-        // 2.67499999999999982236431605997495353221893310546875: only rounding its shortest decimal
-        // form (BigDecimal.valueOf) gives 2.68; new BigDecimal(2.675) gives 2.67.
-        deposits[0].balance = 10.850000000000001
-        deposits[1].balance = 1000.835
-        deposits[2].balance = 3.675
-
-        repository.saveBalances(deposits)
-        entityManager.flush()
-
-        assertThat(storedBalances()).containsExactly(
-            BigDecimal("10.85"),
-            BigDecimal("1000.84"),
-            BigDecimal("3.68"),
-        )
-    }
-
-    @Test
-    fun `should keep a non-earning balance exactly through the calculator, even cents a Double can't hold`() {
-        // Basic at day 0 earns nothing; its Double, 90071992547409.90625, would be written back as .90.
+    fun `should load exact immutable balances for update without withdrawals`() {
         insertDeposit(1, "basic", 0, "90071992547409.91")
-        val deposits = repository.loadAllForUpdate()
+        insertDeposit(2, "student", 400, "99999999999999999.99")
+        insertWithdrawal(10, 1, "50.00", "2026-06-01")
+        RecordingStatementInspector.statements.clear()
 
-        TimeDepositCalculator().updateBalance(deposits)
-        repository.saveBalances(deposits)
-        entityManager.flush()
+        val snapshots = repository.loadAllForUpdate()
 
-        assertThat(storedBalances()).containsExactly(BigDecimal("90071992547409.91"))
+        assertThat(snapshots).containsExactly(
+            TimeDepositSnapshot(1, "basic", BigDecimal("90071992547409.91"), 0),
+            TimeDepositSnapshot(2, "student", BigDecimal("99999999999999999.99"), 400),
+        )
+        assertThat(RecordingStatementInspector.statements).singleElement().satisfies({
+            assertThat(it).doesNotContain("withdrawals")
+        })
+        repository.saveBalances(mapOf(1 to BigDecimal("1.00")))
+        assertThat(snapshots.first().balance).isEqualTo(BigDecimal("90071992547409.91"))
     }
 
     @Test
@@ -216,10 +216,9 @@ class TimeDepositRepositoryIT {
         insertDeposit(1, "basic", 0, "90071992547409.91")
         insertDeposit(2, "basic", 31, "1000.00")
         val deposits = repository.loadAllForUpdate()
-        deposits[1].balance = 1000.83
         RecordingStatementInspector.statements.clear()
 
-        repository.saveBalances(deposits)
+        repository.saveBalances(mapOf(1 to deposits[0].balance, 2 to BigDecimal("1000.83")))
         entityManager.flush()
 
         assertThat(RecordingStatementInspector.statements)
@@ -235,8 +234,8 @@ class TimeDepositRepositoryIT {
         repository.loadAllForUpdate()
         RecordingStatementInspector.statements.clear()
 
-        // Only the id and balance are read: a different plan type or days must not reach the row.
-        repository.saveBalances(listOf(TimeDeposit(deposit.id, "premium", 1000.83, 999)))
+        // The write interface accepts only ids and balances; plan type and days cannot be supplied.
+        repository.saveBalances(mapOf(deposit.id to BigDecimal("1000.83")))
         entityManager.flush()
 
         assertThat(RecordingStatementInspector.statements)
@@ -257,9 +256,8 @@ class TimeDepositRepositoryIT {
         insertDeposit(1, "basic", 31, "1000.00")
         insertDeposit(2, "student", 31, "2000.00")
         val (first, _) = repository.loadAllForUpdate()
-        first.balance = 1000.83
 
-        repository.saveBalances(listOf(first))
+        repository.saveBalances(mapOf(first.id to BigDecimal("1000.83")))
         entityManager.flush()
 
         assertThat(storedBalances()).containsExactly(BigDecimal("1000.83"), BigDecimal("2000.00"))
@@ -271,7 +269,7 @@ class TimeDepositRepositoryIT {
 
         // The @Repository proxy translates the adapter's IllegalArgumentException.
         assertThatExceptionOfType(InvalidDataAccessApiUsageException::class.java)
-            .isThrownBy { repository.saveBalances(listOf(TimeDeposit(42, "basic", 1.0, 31))) }
+            .isThrownBy { repository.saveBalances(mapOf(42 to BigDecimal("1.00"))) }
             .withMessage("No time deposit with id 42")
     }
 

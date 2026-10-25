@@ -98,6 +98,25 @@ class BalanceUpdatesApiIT {
         assertThat(second.body()).isEqualTo(getTimeDeposits().body())
     }
 
+    @Test
+    fun `should calculate each month's interest from the balance persisted by the previous call`() {
+        insertDeposit(1, "basic", 100, "17.77")
+        insertDeposit(2, "student", 100, "17.08")
+        insertDeposit(3, "premium", 100, "3.37")
+
+        repeat(24) {
+            assertThat(postBalanceUpdates().statusCode()).isEqualTo(200)
+        }
+
+        // Cents are persisted after each call. This intentionally differs from passing one Double
+        // through 24 uninterrupted legacy calculator calls; see ADR 0008.
+        assertThat(storedBalances()).containsExactly(
+            BigDecimal("18.01"),
+            BigDecimal("18.05"),
+            BigDecimal("3.62"),
+        )
+    }
+
     /**
      * Two updates sent at the same moment must add two months, not one: the row lock taken by
      * `loadAllForUpdate` makes the second wait for the first to commit, then read its balances.

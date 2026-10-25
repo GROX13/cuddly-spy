@@ -1,8 +1,11 @@
 package org.ikigaidigital.timedeposit.application
 
+import org.ikigaidigital.timedeposit.domain.TimeDeposit
 import org.ikigaidigital.timedeposit.domain.TimeDepositCalculator
 import org.ikigaidigital.timedeposit.domain.TimeDepositStatement
 import org.springframework.transaction.annotation.Transactional
+import java.math.BigDecimal
+import java.math.RoundingMode
 
 /**
  * The application's use cases on time deposits, one method per endpoint (ADR 0016). A plain class,
@@ -34,9 +37,29 @@ class TimeDepositService(
      * state this call produced.
      */
     fun updateAllBalances(): List<TimeDepositStatement> {
-        val deposits = repository.loadAllForUpdate()
+        val snapshots = repository.loadAllForUpdate()
+        val deposits = snapshots.map { TimeDeposit(it.id, it.planType, it.balance.toDouble(), it.days) }
         calculator.updateBalance(deposits) // the frozen legacy calculator mutates the balances in place
-        repository.saveBalances(deposits)
+        // Preserve ADR 0015's delta rule until the monetary calculation is redesigned separately.
+        val balances = snapshots.zip(deposits).associate { (stored, updated) ->
+            stored.id to balanceAfterUpdate(stored.balance, stored.balance.toDouble(), updated.balance)
+        }
+        repository.saveBalances(balances)
         return repository.loadAllWithWithdrawals()
+    }
+
+    /**
+     * The stored balance after the calculator moved its Double from [before] (what it was given) to
+     * [after]. Adds the change, rounded HALF_UP to cents, to the exact [stored] decimal, and returns
+     * [stored] itself when nothing changed, so a deposit that earned nothing is never rewritten (ADR 0015).
+     *
+     * The subtraction is exact (Sterbenz lemma): one month's interest keeps [after] within a factor of
+     * two of [before]. `valueOf` rounds the shortest decimal form of the change, not its binary expansion
+     * (2.675 -> 2.68, where new BigDecimal(2.675) would give 2.67). `-0.0 == 0.0` on a primitive Double,
+     * so a signed zero needs no case of its own.
+     */
+    private fun balanceAfterUpdate(stored: BigDecimal, before: Double, after: Double): BigDecimal {
+        val change = after - before
+        return if (change == 0.0) stored else stored + BigDecimal.valueOf(change).setScale(2, RoundingMode.HALF_UP)
     }
 }
